@@ -171,6 +171,14 @@ function addCapability({ cwd, type, name }) {
     };
   }
 
+  const nameError = validateCapabilityName(name);
+  if (nameError) {
+    return {
+      ok: false,
+      errors: [nameError],
+    };
+  }
+
   const repoName = path.basename(cwd);
   const config = loadUserConfig(cwd, repoName);
   const catalog = loadCatalog();
@@ -214,6 +222,24 @@ function addCapability({ cwd, type, name }) {
 function normalizeCapabilityType(type) {
   if (type === "skill" || type === "agent" || type === "mcp") {
     return type;
+  }
+
+  return null;
+}
+
+function validateCapabilityName(name) {
+  if (typeof name !== "string" || name.length === 0) {
+    return "Capability name is required.";
+  }
+
+  // Keep capability identifiers path-safe so local stub creation cannot escape
+  // the intended `.claude-local` directories.
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) {
+    return "Capability name may contain only letters, numbers, dots, underscores, and dashes.";
+  }
+
+  if (name.includes("..")) {
+    return "Capability name may not contain '..'.";
   }
 
   return null;

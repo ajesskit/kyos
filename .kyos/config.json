@@ -4,7 +4,9 @@
     "claude-base"
   ],
   "installed": {
-    "agents": [],
+    "agents": [
+      "triage"
+    ],
     "mcps": [
       "context7",
       "filesystem"
