@@ -1,5 +1,5 @@
 {
-  "$schema": "https://example.com/agentic-framework-init.schema.json",
+  "$schema": "https://example.com/kyos.schema.json",
   "extends": [
     "claude-base"
   ],
@@ -8,7 +8,9 @@
     "mcps": [
       "filesystem"
     ],
-    "skills": []
+    "skills": [
+      "release-notes"
+    ]
   },
   "paths": {
     "claudeMd": "CLAUDE.md",

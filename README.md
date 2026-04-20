@@ -1,28 +1,28 @@
-# agentic-framework-init
+# kyos
 
-`agentic-framework-init` is a repository-local bootstrap tool for Claude Code repos.
+`kyos` is a repository-local bootstrap tool for Claude Code repos.
 
 Its intended flow is:
 
-- run `npx agentic-framework-init`
+- run `npx kyos --init`
 - if the repo has no Claude setup yet, create a base `CLAUDE.md` and `.claude/` structure
 - if the repo already has `.claude/` or `CLAUDE.md`, analyze what exists and propose safe updates
-- run `npx agentic-framework-init --apply` only after reviewing the proposal
+- run `npx kyos --apply` only after reviewing the proposal
 
 ## Architecture
 
-This follows the AWOS-style split from `provectus/awos`:
+This uses a split architecture:
 
 - the CLI handles deterministic mutations in `process.cwd()`
 - the registry or catalog layer stays separate and discoverable
 
-In this prototype, the catalog layer is represented by [catalog/registry.json](/d:/agentic-workflow/catalog/registry.json:1).
+In this prototype, the catalog layer is represented by [catalog/registry.json](/d:/kyos/catalog/registry.json:1).
 
 ## Managed vs local files
 
-Managed Claude assets are written into `CLAUDE.md` and `.claude/`. Repo-specific additions belong in `.claude-local/`. Framework state is tracked under `.agentic-framework/`.
+Managed Claude assets are written into `CLAUDE.md` and `.claude/`. Repo-specific additions belong in `.claude-local/`. Framework state is tracked under `.kyos/`.
 
-Files are updated safely using `.agentic-framework/lock.json`:
+Files are updated safely using `.kyos/lock.json`:
 
 - if a managed file still matches the last recorded checksum, it can be updated
 - if a managed file was edited locally, the CLI reports a conflict and does not overwrite it
@@ -31,10 +31,10 @@ Files are updated safely using `.agentic-framework/lock.json`:
 ## Default commands
 
 ```powershell
-npx agentic-framework-init
-npx agentic-framework-init --apply
-npx agentic-framework-init analyze
-npx agentic-framework-init doctor
+npx kyos --init
+npx kyos --apply
+npx kyos --analyze
+npx kyos --doctor
 ```
 
 ## Installed layout
@@ -52,7 +52,7 @@ CLAUDE.md
   commands/
   skills/
 
-.agentic-framework/
+.kyos/
   config.json
   version.json
   lock.json
@@ -78,7 +78,7 @@ Because the CLI runs only in the current working directory, you can apply it rep
 $repos = @("D:\repo-a", "D:\repo-b", "D:\repo-c")
 foreach ($repo in $repos) {
   Push-Location $repo
-  npx agentic-framework-init
+  npx kyos --init
   Pop-Location
 }
 ```
@@ -86,7 +86,7 @@ foreach ($repo in $repos) {
 ## Local development
 
 ```powershell
-node .\bin\agentic-framework-init.js
-node .\bin\agentic-framework-init.js --apply
-node .\bin\agentic-framework-init.js add mcp filesystem
+node .\bin\kyos.js --init
+node .\bin\kyos.js --apply
+node .\bin\kyos.js --add mcp filesystem
 ```
