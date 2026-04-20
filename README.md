@@ -4,10 +4,10 @@
 
 Its intended flow is:
 
-- run `npx kyos --init`
+- run `npx kyos-cli --init`
 - if the repo has no Claude setup yet, create a base `CLAUDE.md` and `.claude/` structure
 - if the repo already has `.claude/` or `CLAUDE.md`, analyze what exists and propose safe updates
-- run `npx kyos --apply` only after reviewing the proposal
+- run `npx kyos-cli --apply` only after reviewing the proposal
 
 ## Architecture
 
@@ -31,10 +31,16 @@ Files are updated safely using `.kyos/lock.json`:
 ## Default commands
 
 ```powershell
-npx kyos --init
-npx kyos --apply
-npx kyos --analyze
-npx kyos --doctor
+npx kyos-cli --init
+npx kyos-cli --apply
+npx kyos-cli --analyze
+npx kyos-cli --doctor
+```
+
+Note: these `npx kyos-cli ...` commands will work from any folder only after the package is published to npm. Before the first publish, use the local bin directly:
+
+```powershell
+node .\bin\kyos.js --init
 ```
 
 ## Workflow commands
@@ -115,7 +121,7 @@ Because the CLI runs only in the current working directory, you can apply it rep
 $repos = @(".\repo-a", ".\repo-b", ".\repo-c")
 foreach ($repo in $repos) {
   Push-Location $repo
-  npx kyos --init
+  npx kyos-cli --init
   Pop-Location
 }
 ```
@@ -126,4 +132,24 @@ foreach ($repo in $repos) {
 node .\bin\kyos.js --init
 node .\bin\kyos.js --apply
 node .\bin\kyos.js --add mcp filesystem
+```
+
+## Publishing
+
+Before publishing, verify the package contents:
+
+```powershell
+npm run pack:check
+```
+
+Then publish:
+
+```powershell
+npm publish
+```
+
+After publish, the intended global usage is:
+
+```powershell
+npx kyos-cli --init
 ```

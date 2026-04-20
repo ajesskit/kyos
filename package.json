@@ -1,16 +1,42 @@
 {
-  "name": "kyos",
+  "name": "kyos-cli",
   "version": "0.2.0",
   "description": "Bootstrap and safely evolve a shared Claude Code repo structure.",
+  "keywords": [
+    "claude",
+    "bootstrap",
+    "cli",
+    "kyos",
+    "mcp"
+  ],
   "license": "MIT",
+  "homepage": "https://github.com/ajesskit/kyos#readme",
+  "bugs": {
+    "url": "https://github.com/ajesskit/kyos/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajesskit/kyos.git"
+  },
   "bin": {
     "kyos": "./bin/kyos.js"
+  },
+  "files": [
+    "bin/",
+    "catalog/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "start": "node ./bin/kyos.js --init",
     "analyze": "node ./bin/kyos.js --analyze",
     "apply": "node ./bin/kyos.js --apply",
-    "doctor": "node ./bin/kyos.js --doctor"
+    "doctor": "node ./bin/kyos.js --doctor",
+    "pack:check": "npm pack --dry-run"
   },
   "engines": {
     "node": ">=18"
