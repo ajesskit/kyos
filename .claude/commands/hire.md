@@ -21,7 +21,7 @@ Useful outcomes include:
 
 - a newly registered MCP in `.mcp.json`
 - a reusable skill or agent stub added from `catalog/registry.json`
-- a local placeholder under `.claude-local/` for repo-specific practices
+- a local placeholder under `.claude/` for repo-specific practices
 - a blunt note that says what still has no good support
 
 ## Triage order
@@ -29,7 +29,7 @@ Useful outcomes include:
 Work in this order:
 
 1. Read `CLAUDE.md` and `.claude/commands/project-context.md`.
-2. Inspect current support surfaces: `.mcp.json`, `.claude/agents/`, `.claude/skills/`, `.claude-local/agents/`, `.claude-local/skills/`.
+2. Inspect current support surfaces: `.mcp.json`, `.claude/agents/`, `.claude/skills/`.
 3. Infer the actual stack from docs and repo signals.
 4. Look for the highest-value gaps, not every possible gap.
 5. Pull in catalog-backed additions where the match is obvious.

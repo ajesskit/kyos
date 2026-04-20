@@ -1,51 +1,31 @@
 {
   "files": {
-    ".claude-local/.gitkeep": {
-      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".kyos/claude/agents/README.md": {
+      "checksum": "606490750c4d63ad223674828f02c4625151791f19c5f42bd1664095d7d10c97",
       "managed": true
     },
-    ".claude-local/README.md": {
-      "checksum": "f0e08c8686c030b51e580bcc4183e1e0ae25c3c76fdfa5e88efc2713dbe7bd4d",
+    ".kyos/claude/commands/README.md": {
+      "checksum": "3d3f7335fbda54244692bad30975028bc7e835319bca0f5c37fb521c719230c7",
       "managed": true
     },
-    ".claude-local/agents/.gitkeep": {
-      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "managed": true
-    },
-    ".claude-local/commands/.gitkeep": {
-      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "managed": true
-    },
-    ".claude-local/skills/.gitkeep": {
-      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "managed": true
-    },
-    ".claude/agents/README.md": {
-      "checksum": "4b63d6a77035c1b5d5d0518a8a8811dbc62e7df8690b199af9e3d6220dd59508",
-      "managed": true
-    },
-    ".claude/commands/README.md": {
-      "checksum": "73d65b3f3b2491fda5839c53f5e3864b5b1cf8f1748a7300e48b156d1bfadb93",
-      "managed": true
-    },
-    ".claude/commands/project-context.md": {
+    ".kyos/claude/commands/project-context.md": {
       "checksum": "495d8e15be8c4cad8b3cfc3b1b85c4d99c7f767906926d926e786bf33de0767e",
       "managed": true
     },
-    ".claude/settings.json": {
+    ".kyos/claude/settings.json": {
       "checksum": "bf7dd7bfb54a38484b6c67ab3927a370494b81c01a4630f24c744f0c7bd2cc60",
       "managed": true
     },
-    ".claude/skills/README.md": {
-      "checksum": "0f981ffeb11bafec74d63c827417d46104ba052c23b21f8b27ce4dfc707e2337",
+    ".kyos/claude/skills/README.md": {
+      "checksum": "fba8172f4ebcdf3abb58cd670f0ae2f84240410db8915e6535106fcec01d4eac",
       "managed": true
     },
     ".kyos/version.json": {
-      "checksum": "c97ecd58738c0e061310de533c1d91a30fec974e85ab3decad4499bf812ad9e3",
+      "checksum": "a6cd37c8dcb921dd54a1889abbf87d81ced99d78d172dac406dbcfe3e0ca42f4",
       "managed": true
     },
     "CLAUDE.md": {
-      "checksum": "49affb687af677a093bb3958deda84a501a76061451b61a61ec4709b87de0d7f",
+      "checksum": "f5a7d3300264eb38145c22bf6a00dc0435897e0c5059b7f323675d0ba9c28f5d",
       "managed": true
     }
   },

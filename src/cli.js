@@ -28,7 +28,7 @@ Notes:
   - If .claude/ or CLAUDE.md already exists, '--init' switches to analysis mode and proposes updates without changing files.
   - Use '--apply' to apply only safe create/update actions after review.
   - Managed state lives in .kyos/.
-  - Repo-specific customizations belong in .claude-local/.
+  - Managed source files live in .kyos/claude/, while repo customizations live in .claude/.
   - User-editable configuration lives in ${USER_CONFIG_FILE}.`);
 }
 

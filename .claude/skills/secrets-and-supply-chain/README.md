@@ -23,4 +23,4 @@ Review:
 - `catalog/registry.json`
 - `.mcp.json`
 - `README.md`
-- generated command guidance in `.claude/` and `.claude-local/`
+- generated command guidance in `.claude/` and `.kyos/claude/`

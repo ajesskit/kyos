@@ -4,9 +4,7 @@
     "claude-base"
   ],
   "installed": {
-    "agents": [
-      "triage"
-    ],
+    "agents": [],
     "mcps": [
       "context7",
       "filesystem"
@@ -17,8 +15,8 @@
   },
   "paths": {
     "claudeMd": "CLAUDE.md",
-    "localClaudeDir": ".claude-local",
-    "managedClaudeDir": ".claude"
+    "customClaudeDir": ".claude",
+    "managedSourceDir": ".kyos/claude"
   },
   "policy": {
     "analyzeExistingBeforeApply": true,
