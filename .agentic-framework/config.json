@@ -1,0 +1,23 @@
+{
+  "$schema": "https://example.com/agentic-framework-init.schema.json",
+  "extends": [
+    "claude-base"
+  ],
+  "installed": {
+    "agents": [],
+    "mcps": [
+      "filesystem"
+    ],
+    "skills": []
+  },
+  "paths": {
+    "claudeMd": "CLAUDE.md",
+    "localClaudeDir": ".claude-local",
+    "managedClaudeDir": ".claude"
+  },
+  "policy": {
+    "analyzeExistingBeforeApply": true,
+    "neverOverwriteUnmanagedFiles": true
+  },
+  "repoName": "agentic-workflow"
+}

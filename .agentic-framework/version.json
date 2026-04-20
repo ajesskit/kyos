@@ -1,0 +1,6 @@
+{
+  "framework": "agentic-framework-init",
+  "managedRoot": ".claude",
+  "repoName": "agentic-workflow",
+  "version": "0.2.0"
+}

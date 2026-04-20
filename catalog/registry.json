@@ -1,0 +1,41 @@
+{
+  "modules": {
+    "claude-base": {
+      "description": "Shared Claude Code baseline structure and conventions for every repository.",
+      "version": "0.2.0"
+    }
+  },
+  "skills": {
+    "release-notes": {
+      "description": "Helps standardize release-note authoring across repositories.",
+      "notes": [
+        "This generates only a local override stub.",
+        "Keep repo-specific formatting here instead of changing managed templates."
+      ]
+    }
+  },
+  "agents": {
+    "triage": {
+      "description": "Documents repo-specific issue triage rules and escalation paths.",
+      "notes": [
+        "Use the override stub to describe ownership and local workflows."
+      ]
+    }
+  },
+  "mcps": {
+    "filesystem": {
+      "description": "Example MCP registration for local filesystem access.",
+      "definition": {
+        "command": "npx",
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "."
+        ]
+      },
+      "notes": [
+        "Review the generated MCP definition before enabling it in CI or on shared machines."
+      ]
+    }
+  }
+}
