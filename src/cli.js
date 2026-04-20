@@ -14,13 +14,13 @@ function printHelp() {
   console.log(`${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}
 
 Usage:
-  kyos --init
-  kyos --apply
-  kyos --analyze
-  kyos --doctor
-  kyos --add skill <name>
-  kyos --add agent <name>
-  kyos --add mcp <name>
+  kyos-cli --init
+  kyos-cli --apply
+  kyos-cli --analyze
+  kyos-cli --doctor
+  kyos-cli --add skill <name>
+  kyos-cli --add agent <name>
+  kyos-cli --add mcp <name>
 
 Notes:
   - Commands run against the current working directory only.
@@ -109,7 +109,7 @@ async function main() {
 
   printResult({
     ok: false,
-    errors: ["Unknown arguments. Run 'kyos --help' for usage."],
+    errors: ["Unknown arguments. Run 'kyos-cli --help' for usage."],
   });
 }
 
