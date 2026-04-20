@@ -14,21 +14,20 @@ function printHelp() {
   console.log(`${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}
 
 Usage:
-  agentic-framework-init
-  agentic-framework-init --apply
-  agentic-framework-init analyze
-  agentic-framework-init apply
-  agentic-framework-init doctor
-  agentic-framework-init add skill <name>
-  agentic-framework-init add agent <name>
-  agentic-framework-init add mcp <name>
+  kyos --init
+  kyos --apply
+  kyos --analyze
+  kyos --doctor
+  kyos --add skill <name>
+  kyos --add agent <name>
+  kyos --add mcp <name>
 
 Notes:
   - Commands run against the current working directory only.
-  - If no Claude setup exists yet, the default command installs a base structure.
-  - If .claude/ or CLAUDE.md already exists, the default command analyzes and proposes updates without changing files.
+  - Use '--init' to install a base Claude structure when none exists yet.
+  - If .claude/ or CLAUDE.md already exists, '--init' switches to analysis mode and proposes updates without changing files.
   - Use '--apply' to apply only safe create/update actions after review.
-  - Managed state lives in .agentic-framework/.
+  - Managed state lives in .kyos/.
   - Repo-specific customizations belong in .claude-local/.
   - User-editable configuration lives in ${USER_CONFIG_FILE}.`);
 }
@@ -63,43 +62,43 @@ function printResult(result) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const command = args[0];
-  const applyFlag = args.includes("--apply");
   const cwd = process.cwd();
+  const hasFlag = (flag) => args.includes(flag);
 
-  if (command === "--help" || command === "-h") {
+  if (hasFlag("--help") || hasFlag("-h")) {
     printHelp();
     return;
   }
 
-  if (!command || command === "--apply") {
-    printResult(runBootstrap({ cwd, apply: applyFlag }));
+  if (args.length === 0 || hasFlag("--init")) {
+    printResult(runBootstrap({ cwd, apply: false }));
     return;
   }
 
-  if (command === "analyze") {
-    printResult(runAnalyze({ cwd }));
-    return;
-  }
-
-  if (command === "apply") {
+  if (hasFlag("--apply")) {
     printResult(runBootstrap({ cwd, apply: true }));
     return;
   }
 
-  if (command === "doctor") {
+  if (hasFlag("--analyze")) {
+    printResult(runAnalyze({ cwd }));
+    return;
+  }
+
+  if (hasFlag("--doctor")) {
     printResult(runDoctor({ cwd }));
     return;
   }
 
-  if (command === "add") {
-    const type = args[1];
-    const name = args[2];
+  if (hasFlag("--add")) {
+    const addIndex = args.indexOf("--add");
+    const type = args[addIndex + 1];
+    const name = args[addIndex + 2];
 
     if (!type || !name) {
       printResult({
         ok: false,
-        errors: ["Usage: agentic-framework-init add <skill|agent|mcp> <name>"],
+        errors: ["Usage: kyos --add <skill|agent|mcp> <name>"],
       });
       return;
     }
@@ -110,7 +109,7 @@ async function main() {
 
   printResult({
     ok: false,
-    errors: [`Unknown command '${command}'. Run 'agentic-framework-init --help' for usage.`],
+    errors: ["Unknown arguments. Run 'kyos --help' for usage."],
   });
 }
 

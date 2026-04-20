@@ -1,9 +1,5 @@
 {
   "files": {
-    ".agentic-framework/version.json": {
-      "checksum": "7c130584a5f3987173c5936d592d92e7998ae84fc37a9de72e5028cc1049c793",
-      "managed": true
-    },
     ".claude-local/.gitkeep": {
       "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "managed": true
@@ -33,7 +29,7 @@
       "managed": true
     },
     ".claude/commands/project-context.md": {
-      "checksum": "badd380708bf6903e2a55bf15be3172049553324f26d62607abe0a756b360c3b",
+      "checksum": "495d8e15be8c4cad8b3cfc3b1b85c4d99c7f767906926d926e786bf33de0767e",
       "managed": true
     },
     ".claude/settings.json": {
@@ -44,11 +40,15 @@
       "checksum": "0f981ffeb11bafec74d63c827417d46104ba052c23b21f8b27ce4dfc707e2337",
       "managed": true
     },
+    ".kyos/version.json": {
+      "checksum": "c97ecd58738c0e061310de533c1d91a30fec974e85ab3decad4499bf812ad9e3",
+      "managed": true
+    },
     "CLAUDE.md": {
-      "checksum": "31bf1a19cff15ed48abdda1bf1997c5b0ec2d7c3bd855fc96fe5d9048484dc5b",
+      "checksum": "49affb687af677a093bb3958deda84a501a76061451b61a61ec4709b87de0d7f",
       "managed": true
     }
   },
-  "framework": "agentic-framework-init",
+  "framework": "kyos",
   "version": "0.2.0"
 }

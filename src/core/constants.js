@@ -1,9 +1,9 @@
 const path = require("path");
 
-const FRAMEWORK_NAME = "agentic-framework-init";
-const FRAMEWORK_PACKAGE = "agentic-framework-init";
+const FRAMEWORK_NAME = "kyos";
+const FRAMEWORK_PACKAGE = "kyos";
 const FRAMEWORK_VERSION = "0.2.0";
-const STATE_ROOT = ".agentic-framework";
+const STATE_ROOT = ".kyos";
 const CLAUDE_ROOT = ".claude";
 const LOCAL_ROOT = ".claude-local";
 const CLAUDE_MD_FILE = "CLAUDE.md";

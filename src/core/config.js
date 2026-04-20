@@ -8,7 +8,7 @@ const { stableStringify } = require("./json");
 
 function getDefaultConfig(repoName) {
   return {
-    $schema: "https://example.com/agentic-framework-init.schema.json",
+    $schema: "https://example.com/kyos.schema.json",
     repoName,
     extends: ["claude-base"],
     installed: {

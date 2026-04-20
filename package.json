@@ -1,17 +1,16 @@
 {
-  "name": "agentic-framework-init",
+  "name": "kyos",
   "version": "0.2.0",
   "description": "Bootstrap and safely evolve a shared Claude Code repo structure.",
   "license": "MIT",
   "bin": {
-    "agentic-framework-init": "./bin/agentic-framework-init.js",
-    "myframework": "./bin/myframework.js"
+    "kyos": "./bin/kyos.js"
   },
   "scripts": {
-    "start": "node ./bin/agentic-framework-init.js",
-    "analyze": "node ./bin/agentic-framework-init.js analyze",
-    "apply": "node ./bin/agentic-framework-init.js apply",
-    "doctor": "node ./bin/agentic-framework-init.js doctor"
+    "start": "node ./bin/kyos.js --init",
+    "analyze": "node ./bin/kyos.js --analyze",
+    "apply": "node ./bin/kyos.js --apply",
+    "doctor": "node ./bin/kyos.js --doctor"
   },
   "engines": {
     "node": ">=18"
