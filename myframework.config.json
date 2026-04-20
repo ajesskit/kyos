@@ -1,0 +1,24 @@
+{
+  "$schema": "https://example.com/myframework.schema.json",
+  "extends": [
+    "base"
+  ],
+  "installed": {
+    "agents": [
+      "triage"
+    ],
+    "mcps": [
+      "filesystem"
+    ],
+    "skills": [
+      "release-notes"
+    ]
+  },
+  "overrides": {
+    "agentsDir": ".myframework-overrides/agents",
+    "scriptsDir": ".myframework-overrides/scripts",
+    "skillsDir": ".myframework-overrides/skills",
+    "templatesDir": ".myframework-overrides/templates"
+  },
+  "repoName": "agentic-workflow"
+}

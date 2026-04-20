@@ -1,0 +1,6 @@
+{
+  "framework": "myframework-cli",
+  "managedRoot": ".myframework",
+  "repoName": "agentic-workflow",
+  "version": "0.1.0"
+}

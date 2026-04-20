@@ -1,0 +1,50 @@
+{
+  "files": {
+    ".myframework-overrides/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework-overrides/agents/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework-overrides/commands/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework-overrides/scripts/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework-overrides/skills/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework-overrides/templates/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".myframework/commands/README.md": {
+      "checksum": "e1ba0b9edc9cc566e7b92fb2e33237716e77ad3f8ce4f07488a1d23315a8b85a",
+      "managed": true
+    },
+    ".myframework/commands/bootstrap.md": {
+      "checksum": "38a0de7ceb0d51e732b911bcff7bc918374096033e4391f35d8b605d99cad454",
+      "managed": true
+    },
+    ".myframework/scripts/README.md": {
+      "checksum": "c36764968efe775aa7e9bd04d83d872edd6f7fa095e66d07eb94e08031ec4ef6",
+      "managed": true
+    },
+    ".myframework/templates/README.md": {
+      "checksum": "dd1123b0a7dcf0762c1dd94594e7b3ad4af4be81ebfc28dcc7475cbe64ec917b",
+      "managed": true
+    },
+    ".myframework/version.json": {
+      "checksum": "98176d7ecb4cc0ea898225a9ea92855dcef4de307c31cb9f17d003c227e04c16",
+      "managed": true
+    }
+  },
+  "framework": "myframework-cli",
+  "version": "0.1.0"
+}

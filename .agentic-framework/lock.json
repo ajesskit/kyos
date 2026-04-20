@@ -1,0 +1,54 @@
+{
+  "files": {
+    ".agentic-framework/version.json": {
+      "checksum": "7c130584a5f3987173c5936d592d92e7998ae84fc37a9de72e5028cc1049c793",
+      "managed": true
+    },
+    ".claude-local/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".claude-local/README.md": {
+      "checksum": "f0e08c8686c030b51e580bcc4183e1e0ae25c3c76fdfa5e88efc2713dbe7bd4d",
+      "managed": true
+    },
+    ".claude-local/agents/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".claude-local/commands/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".claude-local/skills/.gitkeep": {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "managed": true
+    },
+    ".claude/agents/README.md": {
+      "checksum": "4b63d6a77035c1b5d5d0518a8a8811dbc62e7df8690b199af9e3d6220dd59508",
+      "managed": true
+    },
+    ".claude/commands/README.md": {
+      "checksum": "73d65b3f3b2491fda5839c53f5e3864b5b1cf8f1748a7300e48b156d1bfadb93",
+      "managed": true
+    },
+    ".claude/commands/project-context.md": {
+      "checksum": "badd380708bf6903e2a55bf15be3172049553324f26d62607abe0a756b360c3b",
+      "managed": true
+    },
+    ".claude/settings.json": {
+      "checksum": "bf7dd7bfb54a38484b6c67ab3927a370494b81c01a4630f24c744f0c7bd2cc60",
+      "managed": true
+    },
+    ".claude/skills/README.md": {
+      "checksum": "0f981ffeb11bafec74d63c827417d46104ba052c23b21f8b27ce4dfc707e2337",
+      "managed": true
+    },
+    "CLAUDE.md": {
+      "checksum": "31bf1a19cff15ed48abdda1bf1997c5b0ec2d7c3bd855fc96fe5d9048484dc5b",
+      "managed": true
+    }
+  },
+  "framework": "agentic-framework-init",
+  "version": "0.2.0"
+}
