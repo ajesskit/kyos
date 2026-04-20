@@ -73,7 +73,7 @@ function runBootstrap({ cwd, apply }) {
       lines,
       warnings: [
         "No files were changed because this repo already has Claude configuration.",
-        "Review the proposal, then run 'npx kyos --apply' to apply only safe create/update actions.",
+        "Review the proposal, then run 'npx kyos-cli --apply' to apply only safe create/update actions.",
       ],
     };
   }
@@ -117,7 +117,7 @@ function runDoctor({ cwd }) {
   const hasExistingClaudeSetup = detectExistingClaudeSetup(cwd);
 
   if (!readJsonIfExists(resolveRepoPath(cwd, USER_CONFIG_FILE))) {
-    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos --init' to create it.`);
+    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos-cli --init' to create it.`);
   }
 
   if (!readJsonIfExists(resolveRepoPath(cwd, LOCK_FILE))) {
