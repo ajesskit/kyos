@@ -6,6 +6,7 @@
   "installed": {
     "agents": [],
     "mcps": [
+      "context7",
       "filesystem"
     ],
     "skills": [

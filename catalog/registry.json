@@ -23,6 +23,16 @@
     }
   },
   "mcps": {
+    "context7": {
+      "description": "Up-to-date code and library documentation via Context7 MCP.",
+      "definition": {
+        "url": "https://mcp.context7.com/mcp"
+      },
+      "notes": [
+        "This uses the official remote Context7 MCP endpoint.",
+        "Add a CONTEXT7_API_KEY header later if you want higher rate limits."
+      ]
+    },
     "filesystem": {
       "description": "Example MCP registration for local filesystem access.",
       "definition": {
