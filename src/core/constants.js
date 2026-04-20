@@ -1,8 +1,8 @@
 const path = require("path");
 
 const FRAMEWORK_NAME = "kyos";
-const FRAMEWORK_PACKAGE = "kyos";
-const FRAMEWORK_VERSION = "0.2.0";
+const FRAMEWORK_PACKAGE = "kyos-cli";
+const FRAMEWORK_VERSION = "0.2.2";
 const STATE_ROOT = ".kyos";
 const CLAUDE_ROOT = ".claude";
 const MANAGED_ROOT = path.posix.join(STATE_ROOT, "claude");

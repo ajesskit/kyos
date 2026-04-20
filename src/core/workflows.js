@@ -34,21 +34,26 @@ function runBootstrap({ cwd, apply }) {
   const plan = planManagedChanges({ cwd, desiredFiles, currentLock });
   const hasExistingClaudeSetup = detectExistingClaudeSetup(cwd);
   const stale = findStaleManagedFiles(cwd, desiredFiles, currentLock);
+  const localSeedPlan = planLocalClaudeSeed({ cwd });
 
   if (!readJsonIfExists(resolveRepoPath(cwd, USER_CONFIG_FILE))) {
     saveUserConfig(cwd, config);
   }
 
-  const created = plan.results.filter((item) => item.action === "create").length;
+  const created =
+    plan.results.filter((item) => item.action === "create").length +
+    localSeedPlan.results.filter((item) => item.action === "create").length;
   const updated = plan.results.filter((item) => item.action === "update").length;
   const conflicts = plan.results.filter((item) => item.action === "conflict").length;
   const blocked = plan.results.filter((item) => item.action === "blocked").length;
 
   if (!hasExistingClaudeSetup || apply) {
     applyManagedChanges({ cwd, plan });
+    applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
   }
 
-  const lines = plan.results
+  const combined = [...plan.results, ...localSeedPlan.results];
+  const lines = combined
     .filter((item) => item.action !== "ok" || hasExistingClaudeSetup)
     .map((item) => {
       if (hasExistingClaudeSetup && !apply) {
@@ -73,7 +78,7 @@ function runBootstrap({ cwd, apply }) {
       lines,
       warnings: [
         "No files were changed because this repo already has Claude configuration.",
-        "Review the proposal, then run 'npx kyos --apply' to apply only safe create/update actions.",
+        "Review the proposal, then run 'npx kyos-cli --apply' to apply only safe create/update actions.",
       ],
     };
   }
@@ -86,6 +91,52 @@ function runBootstrap({ cwd, apply }) {
     lines,
     warnings: stale.length > 0 ? ["Stale managed files were detected. Review them before removing anything."] : [],
   };
+}
+
+function planLocalClaudeSeed({ cwd }) {
+  const seedFiles = {
+    [`${CLAUDE_ROOT}/agents/README.md`]:
+      "# Local Agents\n\nPut repo-specific agents here. This folder is intentionally yours; kyos will not overwrite local agents.\n",
+    [`${CLAUDE_ROOT}/skills/README.md`]:
+      "# Local Skills\n\nPut repo-specific skills here. These are repo-owned instructions that complement the managed base under `.kyos/claude/`.\n",
+    [`${CLAUDE_ROOT}/commands/README.md`]:
+      "# Local Commands\n\nThis folder is for repo-owned workflow prompts (slash-style commands).\n\nRecommended daily flow:\n\n`/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify`\n",
+    [`${CLAUDE_ROOT}/commands/architecture.md`]:
+      "# /kyos:architecture\n\nUse when the repo needs a directional refresh: clarify the target architecture, boundaries, and the few decisions that should not be revisited every task.\n",
+    [`${CLAUDE_ROOT}/commands/hire.md`]:
+      "# /kyos:hire\n\nUse when the current stack needs better support: missing skills, agents, or MCPs. Prefer small, explicit additions that reduce friction for the next few tasks.\n",
+    [`${CLAUDE_ROOT}/commands/spec.md`]:
+      "# /kyos:spec\n\nWrite a concrete, user-facing spec: goals, non-goals, acceptance criteria, and edge cases.\n\nNext: [/kyos:tech](./tech.md)\n",
+    [`${CLAUDE_ROOT}/commands/tech.md`]:
+      "# /kyos:tech\n\nTurn the spec into an engineering plan: approach, data/contracts, risk list, and test strategy.\n\nNext: [/kyos:tasks](./tasks.md)\n",
+    [`${CLAUDE_ROOT}/commands/tasks.md`]:
+      "# /kyos:tasks\n\nBreak the plan into ordered slices that can be implemented and verified safely.\n\nNext: [/kyos:implement](./implement.md)\n",
+    [`${CLAUDE_ROOT}/commands/implement.md`]:
+      "# /kyos:implement\n\nImplement one slice at a time. Keep changes reviewable and run the smallest relevant verification each slice.\n\nNext: [/kyos:verify](./verify.md)\n",
+    [`${CLAUDE_ROOT}/commands/verify.md`]:
+      "# /kyos:verify\n\nVerify behavior against the spec and plan. If it passes, suggest deleting any completed working spec files that are no longer useful.\n\nNext cycle: [/kyos:spec](./spec.md)\n",
+  };
+
+  const results = [];
+  for (const [relativePath, content] of Object.entries(seedFiles)) {
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (fs.existsSync(absolutePath)) {
+      results.push({ action: "ok", path: relativePath });
+      continue;
+    }
+    results.push({ action: "create", path: relativePath, content });
+  }
+
+  return { results };
+}
+
+function applyLocalClaudeSeed({ cwd, plan }) {
+  for (const item of plan.results) {
+    if (item.action !== "create") {
+      continue;
+    }
+    writeTextFile(resolveRepoPath(cwd, item.path), item.content);
+  }
 }
 
 function runAnalyze({ cwd }) {
@@ -117,7 +168,7 @@ function runDoctor({ cwd }) {
   const hasExistingClaudeSetup = detectExistingClaudeSetup(cwd);
 
   if (!readJsonIfExists(resolveRepoPath(cwd, USER_CONFIG_FILE))) {
-    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos --init' to create it.`);
+    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos-cli --init' to create it.`);
   }
 
   if (!readJsonIfExists(resolveRepoPath(cwd, LOCK_FILE))) {
