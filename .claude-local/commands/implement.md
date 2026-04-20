@@ -53,6 +53,6 @@ When using this command, Claude should:
 4. Update the progress state.
 5. Report what changed, what remains, and what is blocked.
 
-## Next step
+## Next in flow
 
-Continue with the next slice or switch to review and verification once the feature is complete.
+Continue with [`/kyos:verify`](./verify.md) once the implementation slice is ready to be checked.

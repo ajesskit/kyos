@@ -1,0 +1,56 @@
+# /kyos:tasks
+
+> Break the current technical plan into concrete, ordered work slices that can be executed and checked without losing the bigger picture.
+
+## When to use it
+
+Use this after the feature has both a functional spec and a technical approach, but before implementation starts sprawling across too many moving parts at once.
+
+## What this should leave behind
+
+- a short list of execution slices in a sensible order
+- clear dependencies between slices
+- a note about what can be checked after each slice
+- a path into implementation that does not require rethinking the whole feature every time
+
+## Inputs to read
+
+- the current feature spec
+- the technical plan
+- current repo context and obvious code hotspots
+
+## How to break work down
+
+1. Start from the end-to-end feature outcome.
+2. Split the work into thin slices that can be completed and checked independently.
+3. Separate foundational work from user-facing work.
+4. Call out blockers, sequencing constraints, and anything that can run in parallel.
+5. Keep each slice small enough that progress is visible.
+
+## What good task slicing looks like
+
+- each task changes a coherent part of the system
+- each task has a visible outcome
+- each task has a natural verification point
+- the ordering reduces rework and merge pain
+
+## Example prompts
+
+```text
+/kyos:tasks
+/kyos:tasks split the OAuth feature into execution slices
+/kyos:tasks turn the CSV import tech plan into ordered implementation work
+```
+
+## What Claude should return
+
+The result should read like an execution board:
+
+- task name
+- why it exists
+- what it depends on
+- what "done" means
+
+## Next in flow
+
+Continue with [`/kyos:implement`](./implement.md) to execute the slices one by one.
