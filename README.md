@@ -16,7 +16,7 @@ This uses a split architecture:
 - the CLI handles deterministic mutations in `process.cwd()`
 - the registry or catalog layer stays separate and discoverable
 
-In this prototype, the catalog layer is represented by [catalog/registry.json](/d:/kyos/catalog/registry.json:1).
+In this prototype, the catalog layer is represented by `catalog/registry.json`.
 
 ## Managed vs local files
 
@@ -36,6 +36,43 @@ npx kyos --apply
 npx kyos --analyze
 npx kyos --doctor
 ```
+
+## Workflow commands
+
+`kyos` also includes repo-local workflow prompts under `.claude-local/commands/`. These are intended for Claude-side usage as slash-style commands:
+
+```text
+/kyos:architecture
+/kyos:hire
+/kyos:spec
+/kyos:tech
+/kyos:tasks
+/kyos:implement
+/kyos:verify
+```
+
+Foundation commands:
+
+- `/kyos:architecture` sets or revises the repo's technical direction
+- `/kyos:hire` adds missing support around the current stack
+
+These are not the normal day-to-day commands. Use them when the repo's architecture changes, the stack expands, or the support layer falls behind.
+
+Daily delivery commands:
+
+- `/kyos:spec` writes a user-facing feature definition
+- `/kyos:tech` turns the feature into an engineering plan
+- `/kyos:tasks` breaks the plan into ordered execution slices
+- `/kyos:implement` executes the plan in verified slices
+- `/kyos:verify` checks the implementation against the spec and plan
+
+Recommended flow:
+
+```text
+/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify
+```
+
+These commands live in `.claude-local/commands/` so the repo can evolve them without editing the managed `.claude/` base.
 
 ## Installed layout
 
@@ -75,7 +112,7 @@ If a repo already contains `.claude/` or `CLAUDE.md`, the default command does n
 Because the CLI runs only in the current working directory, you can apply it repo-by-repo from another script:
 
 ```powershell
-$repos = @("D:\repo-a", "D:\repo-b", "D:\repo-c")
+$repos = @(".\repo-a", ".\repo-b", ".\repo-c")
 foreach ($repo in $repos) {
   Push-Location $repo
   npx kyos --init

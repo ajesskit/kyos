@@ -13,6 +13,8 @@ Typical outcomes:
 - acceptance criteria
 - clearly marked unanswered questions
 
+This is a working artifact, not permanent repo documentation. Once the feature is implemented and verified, the completed spec can be removed unless the team explicitly wants to keep it.
+
 ## Inputs
 
 - current project priorities
@@ -24,7 +26,7 @@ Typical outcomes:
 
 1. Pick one feature or slice of work.
 2. Gather what is already known.
-3. Write the behavior from the user’s point of view.
+3. Write the behavior from the user's point of view.
 4. Push on ambiguity with concrete follow-up questions.
 5. Mark unresolved parts plainly instead of inventing certainty.
 6. Translate the result into testable acceptance criteria.
@@ -53,6 +55,6 @@ When using this command, Claude should:
 4. Mark unresolved questions explicitly.
 5. Save the result into a local planning note.
 
-## Next step
+## Next in flow
 
-Run `/kyos:tech` to turn the feature behavior into an engineering approach.
+Continue with [`/kyos:tech`](./tech.md) to turn the feature behavior into an engineering approach.

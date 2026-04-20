@@ -51,6 +51,6 @@ When using this command, Claude should:
 4. Point out risk, migration, or operational concerns.
 5. Suggest `/kyos:hire` if the design introduces uncovered capabilities.
 
-## Next step
+## Next in flow
 
-Use the plan to start execution with `/kyos:implement`.
+Continue with [`/kyos:tasks`](./tasks.md) to break the plan into ordered execution slices.
