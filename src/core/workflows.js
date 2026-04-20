@@ -4,8 +4,8 @@ const { getCapability, loadCatalog } = require("./catalog");
 const {
   CLAUDE_MD_FILE,
   CLAUDE_ROOT,
-  LOCAL_ROOT,
   LOCK_FILE,
+  MANAGED_ROOT,
   MCP_CONFIG_FILE,
   USER_CONFIG_FILE,
 } = require("./constants");
@@ -73,7 +73,7 @@ function runBootstrap({ cwd, apply }) {
       lines,
       warnings: [
         "No files were changed because this repo already has Claude configuration.",
-        "Review the proposal, then run 'npx kyos-cli --apply' to apply only safe create/update actions.",
+        "Review the proposal, then run 'npx kyos --apply' to apply only safe create/update actions.",
       ],
     };
   }
@@ -117,7 +117,7 @@ function runDoctor({ cwd }) {
   const hasExistingClaudeSetup = detectExistingClaudeSetup(cwd);
 
   if (!readJsonIfExists(resolveRepoPath(cwd, USER_CONFIG_FILE))) {
-    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos-cli --init' to create it.`);
+    warnings.push(`${USER_CONFIG_FILE} is missing. Run 'npx kyos --init' to create it.`);
   }
 
   if (!readJsonIfExists(resolveRepoPath(cwd, LOCK_FILE))) {
@@ -207,7 +207,7 @@ function addCapability({ cwd, type, name }) {
   }
 
   const folderName = normalizedType === "skill" ? "skills" : "agents";
-  const targetFile = resolveRepoPath(cwd, `${LOCAL_ROOT}/${folderName}/${name}/README.md`);
+  const targetFile = resolveRepoPath(cwd, `${CLAUDE_ROOT}/${folderName}/${name}/README.md`);
   writeTextFile(targetFile, createOverrideTemplate({ type: normalizedType, name, capability }));
   addInstalledCapability(config, `${folderName}`, name);
   saveUserConfig(cwd, config);
@@ -233,7 +233,7 @@ function validateCapabilityName(name) {
   }
 
   // Keep capability identifiers path-safe so local stub creation cannot escape
-  // the intended `.claude-local` directories.
+  // the intended repo-owned `.claude` directories.
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) {
     return "Capability name may contain only letters, numbers, dots, underscores, and dashes.";
   }
@@ -261,14 +261,18 @@ Describe what this repo needs to override or extend locally.
 
 ## Contract
 
-- Keep framework-managed assets under \`.claude/\`.
-- Store repo-specific logic under \`.claude-local/\`.
+- Keep framework-managed assets under \`.kyos/claude/\`.
+- Store repo-specific logic under \`.claude/\`.
 - Document any coupling to generated commands, agents, or skills.
 `;
 }
 
 function detectExistingClaudeSetup(cwd) {
-  return fs.existsSync(resolveRepoPath(cwd, CLAUDE_ROOT)) || fs.existsSync(resolveRepoPath(cwd, CLAUDE_MD_FILE));
+  return (
+    fs.existsSync(resolveRepoPath(cwd, CLAUDE_ROOT)) ||
+    fs.existsSync(resolveRepoPath(cwd, path.join(MANAGED_ROOT, "commands"))) ||
+    fs.existsSync(resolveRepoPath(cwd, CLAUDE_MD_FILE))
+  );
 }
 
 function formatProposalLine(item) {

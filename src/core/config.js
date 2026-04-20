@@ -18,8 +18,8 @@ function getDefaultConfig(repoName) {
     },
     paths: {
       claudeMd: "CLAUDE.md",
-      managedClaudeDir: ".claude",
-      localClaudeDir: ".claude-local",
+      managedSourceDir: ".kyos/claude",
+      customClaudeDir: ".claude"
     },
     policy: {
       analyzeExistingBeforeApply: true,
