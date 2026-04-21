@@ -3,7 +3,7 @@ const {
   MCP_CONFIG_FILE,
   USER_CONFIG_FILE,
 } = require("./constants");
-const { readJsonIfExists, writeTextFile } = require("./fs");
+const { readJsonIfExists, writeRepoTextFile } = require("./fs");
 const { stableStringify } = require("./json");
 
 function getDefaultConfig(repoName) {
@@ -35,8 +35,7 @@ function loadUserConfig(cwd, repoName) {
 }
 
 function saveUserConfig(cwd, config) {
-  const configPath = path.resolve(cwd, USER_CONFIG_FILE);
-  writeTextFile(configPath, stableStringify(config));
+  writeRepoTextFile(cwd, USER_CONFIG_FILE, stableStringify(config));
 }
 
 function loadMcpConfig(cwd) {
@@ -45,8 +44,7 @@ function loadMcpConfig(cwd) {
 }
 
 function saveMcpConfig(cwd, config) {
-  const filePath = path.resolve(cwd, MCP_CONFIG_FILE);
-  writeTextFile(filePath, stableStringify(config));
+  writeRepoTextFile(cwd, MCP_CONFIG_FILE, stableStringify(config));
 }
 
 function addInstalledCapability(config, type, name) {

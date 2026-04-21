@@ -16,7 +16,7 @@ const {
   saveMcpConfig,
   saveUserConfig,
 } = require("./config");
-const { readJsonIfExists, resolveRepoPath, writeTextFile } = require("./fs");
+const { readJsonIfExists, resolveRepoPath, writeRepoTextFile } = require("./fs");
 const { sha256 } = require("./hash");
 const {
   applyManagedChanges,
@@ -99,6 +99,8 @@ function planLocalClaudeSeed({ cwd }) {
       "# Local Agents\n\nPut repo-specific agents here. This folder is intentionally yours; kyos will not overwrite local agents.\n",
     [`${CLAUDE_ROOT}/skills/README.md`]:
       "# Local Skills\n\nPut repo-specific skills here. These are repo-owned instructions that complement the managed base under `.kyos/claude/`.\n",
+    [`${CLAUDE_ROOT}/rules/README.md`]:
+      "# Local Rules\n\nPut repo-specific working rules here (coding standards, review expectations, release rules, security notes).\n",
     [`${CLAUDE_ROOT}/commands/README.md`]:
       "# Local Commands\n\nThis folder is for repo-owned workflow prompts (slash-style commands).\n\nRecommended daily flow:\n\n`/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify`\n",
     [`${CLAUDE_ROOT}/commands/architecture.md`]:
@@ -135,7 +137,7 @@ function applyLocalClaudeSeed({ cwd, plan }) {
     if (item.action !== "create") {
       continue;
     }
-    writeTextFile(resolveRepoPath(cwd, item.path), item.content);
+    writeRepoTextFile(cwd, item.path, item.content);
   }
 }
 
@@ -258,8 +260,8 @@ function addCapability({ cwd, type, name }) {
   }
 
   const folderName = normalizedType === "skill" ? "skills" : "agents";
-  const targetFile = resolveRepoPath(cwd, `${CLAUDE_ROOT}/${folderName}/${name}/README.md`);
-  writeTextFile(targetFile, createOverrideTemplate({ type: normalizedType, name, capability }));
+  const targetRelativePath = `${CLAUDE_ROOT}/${folderName}/${name}/README.md`;
+  writeRepoTextFile(cwd, targetRelativePath, createOverrideTemplate({ type: normalizedType, name, capability }));
   addInstalledCapability(config, `${folderName}`, name);
   saveUserConfig(cwd, config);
 

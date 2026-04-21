@@ -12,6 +12,10 @@
       "checksum": "52cd3eff6e060a707159905b49189dc1ce3cbe45929350709e9a16190da87fbf",
       "managed": true
     },
+    ".kyos/claude/rules/README.md": {
+      "checksum": "1f7b18c4128e8e2003d6972ef1b1b1fb9e0e055e4cdb206f982c26486bdb093b",
+      "managed": true
+    },
     ".kyos/claude/settings.json": {
       "checksum": "bf7dd7bfb54a38484b6c67ab3927a370494b81c01a4630f24c744f0c7bd2cc60",
       "managed": true

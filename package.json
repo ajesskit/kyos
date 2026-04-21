@@ -37,6 +37,7 @@
     "analyze": "node ./bin/kyos.js --analyze",
     "apply": "node ./bin/kyos.js --apply",
     "doctor": "node ./bin/kyos.js --doctor",
+    "test": "node ./test/run.js",
     "pack:check": "npm pack --dry-run"
   },
   "engines": {
