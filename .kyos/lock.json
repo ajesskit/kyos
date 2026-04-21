@@ -9,7 +9,11 @@
       "managed": true
     },
     ".kyos/claude/commands/project-context.md": {
-      "checksum": "52cd3eff6e060a707159905b49189dc1ce3cbe45929350709e9a16190da87fbf",
+      "checksum": "8f9f9516c173391700bf885ad461d550c46060365c5423d534c0bd6ca39afc58",
+      "managed": true
+    },
+    ".kyos/claude/rules/README.md": {
+      "checksum": "1f7b18c4128e8e2003d6972ef1b1b1fb9e0e055e4cdb206f982c26486bdb093b",
       "managed": true
     },
     ".kyos/claude/settings.json": {
@@ -21,7 +25,7 @@
       "managed": true
     },
     ".kyos/version.json": {
-      "checksum": "9b831bcdd31147cb06b200332c853f0f902a999f454837e7204b2173e21fe5e3",
+      "checksum": "b189d583658a87f8db0dd2a1ab2f39fd5b8973a2388e2685137d4c9f271285bc",
       "managed": true
     },
     "CLAUDE.md": {
@@ -30,5 +34,5 @@
     }
   },
   "framework": "kyos-cli",
-  "version": "0.2.2"
+  "version": "0.2.4"
 }

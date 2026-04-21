@@ -16,7 +16,7 @@ const {
   saveMcpConfig,
   saveUserConfig,
 } = require("./config");
-const { readJsonIfExists, resolveRepoPath, writeTextFile } = require("./fs");
+const { readJsonIfExists, resolveRepoPath, writeRepoTextFile } = require("./fs");
 const { sha256 } = require("./hash");
 const {
   applyManagedChanges,
@@ -28,6 +28,7 @@ const {
 
 function runBootstrap({ cwd, apply }) {
   const repoName = path.basename(cwd);
+  const claudeMdExistedAtStart = fs.existsSync(resolveRepoPath(cwd, CLAUDE_MD_FILE));
   const config = loadUserConfig(cwd, repoName);
   const desiredFiles = renderManagedFiles({ cwd, config });
   const currentLock = loadLock(cwd);
@@ -71,6 +72,18 @@ function runBootstrap({ cwd, apply }) {
     lines.push(`! ${stalePath} (managed previously but no longer part of the current base set)`);
   }
 
+  const createdClaudeMd =
+    !claudeMdExistedAtStart &&
+    (!hasExistingClaudeSetup || apply) &&
+    plan.results.some((item) => item.action === "create" && item.path === CLAUDE_MD_FILE);
+
+  if (createdClaudeMd) {
+    lines.push("");
+    lines.push(
+      "We noticed that you didn't have a CLAUDE.md file, so we created one for you. However, we recommend regenerating it using Claude in planning mode for smoother interaction."
+    );
+  }
+
   if (hasExistingClaudeSetup && !apply) {
     return {
       ok: true,
@@ -99,6 +112,8 @@ function planLocalClaudeSeed({ cwd }) {
       "# Local Agents\n\nPut repo-specific agents here. This folder is intentionally yours; kyos will not overwrite local agents.\n",
     [`${CLAUDE_ROOT}/skills/README.md`]:
       "# Local Skills\n\nPut repo-specific skills here. These are repo-owned instructions that complement the managed base under `.kyos/claude/`.\n",
+    [`${CLAUDE_ROOT}/rules/README.md`]:
+      "# Local Rules\n\nPut repo-specific working rules here (coding standards, review expectations, release rules, security notes).\n",
     [`${CLAUDE_ROOT}/commands/README.md`]:
       "# Local Commands\n\nThis folder is for repo-owned workflow prompts (slash-style commands).\n\nRecommended daily flow:\n\n`/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify`\n",
     [`${CLAUDE_ROOT}/commands/architecture.md`]:
@@ -135,7 +150,7 @@ function applyLocalClaudeSeed({ cwd, plan }) {
     if (item.action !== "create") {
       continue;
     }
-    writeTextFile(resolveRepoPath(cwd, item.path), item.content);
+    writeRepoTextFile(cwd, item.path, item.content);
   }
 }
 
@@ -258,8 +273,8 @@ function addCapability({ cwd, type, name }) {
   }
 
   const folderName = normalizedType === "skill" ? "skills" : "agents";
-  const targetFile = resolveRepoPath(cwd, `${CLAUDE_ROOT}/${folderName}/${name}/README.md`);
-  writeTextFile(targetFile, createOverrideTemplate({ type: normalizedType, name, capability }));
+  const targetRelativePath = `${CLAUDE_ROOT}/${folderName}/${name}/README.md`;
+  writeRepoTextFile(cwd, targetRelativePath, createOverrideTemplate({ type: normalizedType, name, capability }));
   addInstalledCapability(config, `${folderName}`, name);
   saveUserConfig(cwd, config);
 

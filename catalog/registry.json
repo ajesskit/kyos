@@ -2,7 +2,7 @@
   "modules": {
     "claude-base": {
       "description": "Shared Claude Code baseline structure and conventions for every repository.",
-      "version": "0.2.0"
+      "version": "0.2.4"
     }
   },
   "skills": {
@@ -11,6 +11,34 @@
       "notes": [
         "This generates only a local override stub.",
         "Keep repo-specific formatting here instead of changing managed templates."
+      ]
+    },
+    "security-audit": {
+      "description": "Guides a lightweight security audit and threat review for the current repo.",
+      "notes": [
+        "This generates only a local override stub.",
+        "Keep findings and repo-specific security practices here."
+      ]
+    },
+    "path-safety": {
+      "description": "Checks common path traversal and filesystem write risks in repo tooling.",
+      "notes": [
+        "This generates only a local override stub.",
+        "Use it when adding new file-writes or accepting user-controlled paths."
+      ]
+    },
+    "mcp-hardening": {
+      "description": "Reviews MCP configuration trust boundaries and safe defaults for shared repos.",
+      "notes": [
+        "This generates only a local override stub.",
+        "Use it before enabling MCPs in CI or shared machines."
+      ]
+    },
+    "secrets-and-supply-chain": {
+      "description": "Documents how the repo handles secrets, registries, and third-party execution safely.",
+      "notes": [
+        "This generates only a local override stub.",
+        "Capture agreed rules (token storage, pinning, review steps) here."
       ]
     }
   },
