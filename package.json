@@ -1,6 +1,6 @@
 {
   "name": "kyos-cli",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Bootstrap and safely evolve a shared Claude Code repo structure.",
   "keywords": [
     "claude",
@@ -26,6 +26,7 @@
     "bin/",
     "catalog/",
     "src/",
+    "test/",
     "README.md",
     "LICENSE"
   ],

@@ -28,6 +28,7 @@ const {
 
 function runBootstrap({ cwd, apply }) {
   const repoName = path.basename(cwd);
+  const claudeMdExistedAtStart = fs.existsSync(resolveRepoPath(cwd, CLAUDE_MD_FILE));
   const config = loadUserConfig(cwd, repoName);
   const desiredFiles = renderManagedFiles({ cwd, config });
   const currentLock = loadLock(cwd);
@@ -69,6 +70,18 @@ function runBootstrap({ cwd, apply }) {
 
   for (const stalePath of stale) {
     lines.push(`! ${stalePath} (managed previously but no longer part of the current base set)`);
+  }
+
+  const createdClaudeMd =
+    !claudeMdExistedAtStart &&
+    (!hasExistingClaudeSetup || apply) &&
+    plan.results.some((item) => item.action === "create" && item.path === CLAUDE_MD_FILE);
+
+  if (createdClaudeMd) {
+    lines.push("");
+    lines.push(
+      "We noticed that you didn't have a CLAUDE.md file, so we created one for you. However, we recommend regenerating it using Claude in planning mode for smoother interaction."
+    );
   }
 
   if (hasExistingClaudeSetup && !apply) {
