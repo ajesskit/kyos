@@ -2,7 +2,7 @@ const path = require("path");
 
 const FRAMEWORK_NAME = "kyos";
 const FRAMEWORK_PACKAGE = "kyos-cli";
-const FRAMEWORK_VERSION = "0.2.5";
+const FRAMEWORK_VERSION = "0.2.6";
 const STATE_ROOT = ".kyos";
 const CLAUDE_ROOT = ".claude";
 const MANAGED_ROOT = path.posix.join(STATE_ROOT, "claude");
@@ -11,9 +11,11 @@ const LOCK_FILE = path.posix.join(STATE_ROOT, "lock.json");
 const VERSION_FILE = path.posix.join(STATE_ROOT, "version.json");
 const USER_CONFIG_FILE = path.posix.join(STATE_ROOT, "config.json");
 const MCP_CONFIG_FILE = ".mcp.json";
-const CATALOG_FILE = path.resolve(__dirname, "../../catalog/registry.json");
+const CATALOG_DIR = path.resolve(__dirname, "../../catalog");
+const CATALOG_FILE = path.join(CATALOG_DIR, "registry.json");
 
 module.exports = {
+  CATALOG_DIR,
   CATALOG_FILE,
   CLAUDE_MD_FILE,
   CLAUDE_ROOT,

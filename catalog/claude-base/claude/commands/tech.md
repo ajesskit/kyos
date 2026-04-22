@@ -54,3 +54,11 @@ When using this command, Claude should:
 ## Next in flow
 
 Continue with [`/kyos:tasks`](./tasks.md) to break the plan into ordered execution slices.
+
+## Where to save the result
+
+Write the technical plan into a repo-owned markdown file so it can be reviewed and committed:
+
+- `docs/execution/<spec-slug>/tech.md`
+
+Use the same `<spec-slug>` chosen in `/kyos:spec` (the folder created under `docs/execution/`).

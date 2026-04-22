@@ -54,3 +54,11 @@ The result should read like an execution board:
 ## Next in flow
 
 Continue with [`/kyos:implement`](./implement.md) to execute the slices one by one.
+
+## Where to save the result
+
+Write the execution slices into a repo-owned markdown file so it can be reviewed and committed:
+
+- `docs/execution/<spec-slug>/tasks.md`
+
+Use the same `<spec-slug>` chosen in `/kyos:spec` (the folder created under `docs/execution/`).

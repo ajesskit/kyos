@@ -14,7 +14,7 @@ function printHelp() {
   console.log(`${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}
 
 Usage:
-  kyos-cli --init
+  kyos-cli --init [--force]
   kyos-cli --apply
   kyos-cli --analyze
   kyos-cli --doctor
@@ -26,6 +26,7 @@ Notes:
   - Commands run against the current working directory only.
   - Use '--init' to install a base Claude structure when none exists yet.
   - If .claude/ or CLAUDE.md already exists, '--init' switches to analysis mode and proposes updates without changing files.
+  - Use '--force' with '--init' to reset .claude/, .kyos/, and CLAUDE.md to the current managed baseline (destructive).
   - Use '--apply' to apply only safe create/update actions after review.
   - Managed state lives in .kyos/.
   - Managed source files live in .kyos/claude/, while repo customizations live in .claude/.
@@ -64,6 +65,7 @@ async function main() {
   const args = process.argv.slice(2);
   const cwd = process.cwd();
   const hasFlag = (flag) => args.includes(flag);
+  const force = hasFlag("--force");
 
   if (hasFlag("--help") || hasFlag("-h")) {
     printHelp();
@@ -71,12 +73,12 @@ async function main() {
   }
 
   if (args.length === 0 || hasFlag("--init")) {
-    printResult(runBootstrap({ cwd, apply: false }));
+    printResult(runBootstrap({ cwd, apply: false, force }));
     return;
   }
 
   if (hasFlag("--apply")) {
-    printResult(runBootstrap({ cwd, apply: true }));
+    printResult(runBootstrap({ cwd, apply: true, force }));
     return;
   }
 

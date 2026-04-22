@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "defaultMode": "ask"
-  },
-  "statusLine": {
-    "showBranch": true,
-    "showDirty": true
-  }
-}
