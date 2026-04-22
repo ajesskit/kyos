@@ -1,5 +1,8 @@
 # kyos
 
+[![npm](https://img.shields.io/npm/v/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
+[![npm downloads](https://img.shields.io/npm/dm/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
+
 `kyos-cli` is a repo-local CLI for standardizing Claude Code setup across many repositories. It installs a base `.claude/` layout and keeps a managed source layer under `.kyos/claude/` so updates are repeatable. Repo-owned customizations live in `.claude/`, and updates are guarded by `.kyos/lock.json` so local edits aren't overwritten silently.
 
 It also ships workflow prompts like `/kyos:architecture` and `/kyos:hire` for bigger planning, plus a feature delivery chain (`/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify`) that works for features and complex bugfixes.
