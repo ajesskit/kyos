@@ -1,6 +1,6 @@
 {
   "name": "kyos-cli",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Bootstrap and safely evolve a shared Claude Code repo structure.",
   "keywords": [
     "claude",
@@ -19,8 +19,8 @@
     "url": "git+https://github.com/ajesskit/kyos.git"
   },
   "bin": {
-    "kyos-cli": "./bin/kyos.js",
-    "kyos": "./bin/kyos.js"
+    "kyos-cli": "bin/kyos.js",
+    "kyos": "bin/kyos.js"
   },
   "files": [
     "bin/",
