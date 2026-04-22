@@ -61,3 +61,4 @@ If verification passes:
 - suggest deleting the finished spec note if it was only a temporary working artifact
 - keep it only if the team wants a durable product or decision record
 - then start the next feature cycle at [`/kyos:spec`](./spec.md)
+

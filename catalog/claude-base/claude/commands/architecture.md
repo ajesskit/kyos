@@ -72,3 +72,17 @@ A good result should leave a reader able to answer:
 - what support is missing around that stack
 
 If new stack areas appear that the repo is not equipped for, point to `/kyos:hire`.
+
+## Where to save the result (so it can be committed)
+
+Once the architecture direction is agreed, write the accepted summary into a repo-owned markdown file and commit it.
+
+Recommended default:
+
+- `docs/execution/architecture.md` (task-facing architecture note intended to be committed)
+
+Optional additions (if helpful):
+
+- `docs/architecture/overview.md` for a longer-lived narrative architecture overview
+- `docs/architecture/diagrams/` for diagrams and supporting assets
+- `docs/adr/` for small, dated decision records (ADRs)

@@ -26,8 +26,66 @@ const {
   renderManagedFiles,
 } = require("./managed-files");
 
-function runBootstrap({ cwd, apply }) {
+function isPathWithinRoot(rootPath, candidatePath) {
+  const relative = path.relative(rootPath, candidatePath);
+  if (relative === "") {
+    return true;
+  }
+  return !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+function forceResetBootstrap({ cwd }) {
+  const rootReal = fs.realpathSync.native(cwd);
+  const targets = [CLAUDE_ROOT, ".kyos", CLAUDE_MD_FILE];
+
+  for (const relativePath of targets) {
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (!fs.existsSync(absolutePath)) {
+      continue;
+    }
+
+    const stat = fs.lstatSync(absolutePath);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Refusing --force reset through symlink/junction: ${relativePath}`);
+    }
+
+    const real = fs.realpathSync.native(absolutePath);
+    if (!isPathWithinRoot(rootReal, real)) {
+      throw new Error(`Refusing --force reset outside repo root (path resolves outside): ${relativePath}`);
+    }
+
+    fs.rmSync(absolutePath, { recursive: true, force: true });
+  }
+}
+
+function managedCommandWrapper(filename) {
+  const slug = filename.replace(/\.md$/i, "");
+  const isReadme = slug.toLowerCase() === "readme";
+  const title = isReadme ? "Kyos Commands" : `/kyos:${slug}`;
+  const rel = `../../.kyos/claude/commands/${filename}`;
+
+  return `# ${title}
+
+This command is managed by kyos-cli.
+
+You can:
+
+- Add repo-specific notes/rules below to enrich the managed version, or
+- Replace this file entirely and (optionally) remove the “Full definition” link to rely only on yours.
+
+- Full definition: [${rel}](${rel})
+
+## Local additions
+
+Add any repo-specific guidance here.
+`;
+}
+
+function runBootstrap({ cwd, apply, force }) {
   const repoName = path.basename(cwd);
+  if (force) {
+    forceResetBootstrap({ cwd });
+  }
   const claudeMdExistedAtStart = fs.existsSync(resolveRepoPath(cwd, CLAUDE_MD_FILE));
   const config = loadUserConfig(cwd, repoName);
   const desiredFiles = renderManagedFiles({ cwd, config });
@@ -108,6 +166,8 @@ function runBootstrap({ cwd, apply }) {
 
 function planLocalClaudeSeed({ cwd }) {
   const seedFiles = {
+    [`${CLAUDE_ROOT}/commands/project-context.md`]:
+      "# Project Context (Repo-Owned)\n\nCapture architecture, key commands, and testing guidance for this repository here.\n\n- What are we building?\n- What are the main components (UI/API/workers)?\n- What are the key external dependencies?\n- How do we run tests and validate changes?\n",
     [`${CLAUDE_ROOT}/agents/README.md`]:
       "# Local Agents\n\nPut repo-specific agents here. This folder is intentionally yours; kyos will not overwrite local agents.\n\n## Available agents\n\n- `security-engineer.md` — deep-dive AppSec mindset for threat modeling, code review, and actionable remediations.\n",
     [`${CLAUDE_ROOT}/agents/security-engineer.md`]:
@@ -136,6 +196,25 @@ function planLocalClaudeSeed({ cwd }) {
       "# /kyos:verify\n\nVerify behavior against the spec and plan. If it passes, suggest deleting any completed working spec files that are no longer useful.\n\nNext cycle: [/kyos:spec](./spec.md)\n",
   };
 
+  const managedCommandFiles = [
+    "README.md",
+    "prevalidate.md",
+    "architecture.md",
+    "hire.md",
+    "spec.md",
+    "tech.md",
+    "tasks.md",
+    "implement.md",
+    "verify.md",
+  ];
+
+  // Seed the managed commands as short wrappers that point to `.kyos/claude/commands/`,
+  // while leaving `.claude/commands/project-context.md` as repo-owned content.
+  for (const filename of managedCommandFiles) {
+    delete seedFiles[`${CLAUDE_ROOT}/commands/${filename}`];
+  }
+  delete seedFiles[`${CLAUDE_ROOT}/agents/security-engineer.md`];
+
   const results = [];
   for (const [relativePath, content] of Object.entries(seedFiles)) {
     const absolutePath = resolveRepoPath(cwd, relativePath);
@@ -144,6 +223,16 @@ function planLocalClaudeSeed({ cwd }) {
       continue;
     }
     results.push({ action: "create", path: relativePath, content });
+  }
+
+  for (const filename of managedCommandFiles) {
+    const relativePath = `${CLAUDE_ROOT}/commands/${filename}`;
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (fs.existsSync(absolutePath)) {
+      results.push({ action: "ok", path: relativePath });
+      continue;
+    }
+    results.push({ action: "create", path: relativePath, content: managedCommandWrapper(filename) });
   }
 
   return { results };

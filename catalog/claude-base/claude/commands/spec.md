@@ -58,3 +58,14 @@ When using this command, Claude should:
 ## Next in flow
 
 Continue with [`/kyos:tech`](./tech.md) to turn the feature behavior into an engineering approach.
+
+## Where to save the result
+
+Create a dedicated execution folder for this spec, then write the spec into a repo-owned markdown file so it can be reviewed and committed.
+
+1. Pick a short, path-safe spec slug (lowercase, hyphenated), e.g. `oauth-login` or `csv-import`.
+2. Create: `docs/execution/<spec-slug>/`
+3. Write the spec to:
+   - `docs/execution/<spec-slug>/spec.md`
+
+If the spec is purely a temporary working artifact, it can be deleted after `/kyos:verify`—but default to committing it while work is in flight.

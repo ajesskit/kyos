@@ -25,8 +25,40 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".kyos/claude/rules/README.md"));
     assert.ok(exists(cwd, "CLAUDE.md"));
 
+    assert.ok(exists(cwd, ".kyos/claude/commands/README.md"));
+    assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
+    assert.ok(exists(cwd, ".kyos/claude/agents/security-engineer.md"));
+
     assert.ok(exists(cwd, ".claude/commands/README.md"));
     assert.ok(exists(cwd, ".claude/commands/spec.md"));
+    assert.ok(exists(cwd, ".claude/commands/architecture.md"));
+    assert.equal(exists(cwd, ".claude/agents/security-engineer.md"), false);
+
+    const managedSpec = fs.readFileSync(path.join(cwd, ".kyos", "claude", "commands", "spec.md"), "utf8");
+    const localSpec = fs.readFileSync(path.join(cwd, ".claude", "commands", "spec.md"), "utf8");
+    assert.ok(localSpec.includes("../../.kyos/claude/commands/spec.md"));
+    assert.ok(localSpec.includes("/kyos:spec"));
+    assert.ok(localSpec.length < managedSpec.length);
+
+    const managedArchitecture = fs.readFileSync(
+      path.join(cwd, ".kyos", "claude", "commands", "architecture.md"),
+      "utf8"
+    );
+    const localArchitecture = fs.readFileSync(path.join(cwd, ".claude", "commands", "architecture.md"), "utf8");
+    assert.ok(localArchitecture.includes("../../.kyos/claude/commands/architecture.md"));
+    assert.ok(localArchitecture.includes("/kyos:architecture"));
+    assert.ok(localArchitecture.length < managedArchitecture.length);
+
+    const managedReadme = fs.readFileSync(path.join(cwd, ".kyos", "claude", "commands", "README.md"), "utf8");
+    const localReadme = fs.readFileSync(path.join(cwd, ".claude", "commands", "README.md"), "utf8");
+    assert.ok(localReadme.includes("../../.kyos/claude/commands/README.md"));
+    assert.ok(localReadme.length < managedReadme.length);
+
+    const catalogSpec = fs.readFileSync(
+      path.join(__dirname, "..", "catalog", "claude-base", "claude", "commands", "spec.md"),
+      "utf8"
+    );
+    assert.equal(managedSpec, catalogSpec);
     assert.ok(exists(cwd, ".claude/agents/README.md"));
     assert.ok(exists(cwd, ".claude/rules/README.md"));
     assert.ok(exists(cwd, ".claude/skills/README.md"));
@@ -51,6 +83,44 @@ module.exports = function register(test) {
 
     const doctor = runDoctor({ cwd });
     assert.equal(doctor.ok, true);
+  });
+
+  test("--force resets .claude/.kyos/CLAUDE.md", () => {
+    const cwd = mkTempDir("kyos-force-");
+    runBootstrap({ cwd, apply: false });
+
+    fs.writeFileSync(path.join(cwd, "CLAUDE.md"), "# custom\n", "utf8");
+    fs.writeFileSync(path.join(cwd, ".claude", "commands", "spec.md"), "# custom spec\n", "utf8");
+    fs.mkdirSync(path.join(cwd, ".claude", "commands", "extra"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".claude", "commands", "extra", "note.md"), "hello", "utf8");
+
+    const result = runBootstrap({ cwd, apply: false, force: true });
+    assert.equal(result.ok, true);
+
+    const resetClaude = fs.readFileSync(path.join(cwd, "CLAUDE.md"), "utf8");
+    assert.ok(resetClaude.includes("kyos-cli"));
+    assert.notEqual(resetClaude, "# custom\n");
+
+    assert.equal(exists(cwd, ".claude/commands/extra/note.md"), false);
+
+    const localSpec = fs.readFileSync(path.join(cwd, ".claude", "commands", "spec.md"), "utf8");
+    assert.ok(localSpec.includes("../../.kyos/claude/commands/spec.md"));
+    assert.ok(localSpec.includes("/kyos:spec"));
+
+    assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
+  });
+
+  test(".claude command wrappers are not overwritten if customized", () => {
+    const cwd = mkTempDir("kyos-flow-");
+    runBootstrap({ cwd, apply: false });
+
+    const localSpecPath = path.join(cwd, ".claude", "commands", "spec.md");
+    fs.writeFileSync(localSpecPath, "# custom spec\n", "utf8");
+
+    runBootstrap({ cwd, apply: true });
+
+    const after = fs.readFileSync(localSpecPath, "utf8");
+    assert.equal(after, "# custom spec\n");
   });
 
   test("capability name validation blocks traversal-style input", () => {

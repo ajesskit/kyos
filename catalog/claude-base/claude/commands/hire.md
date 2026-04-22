@@ -21,7 +21,7 @@ Useful outcomes include:
 
 - a newly registered MCP in `.mcp.json`
 - a reusable skill or agent stub added from `catalog/registry.json`
-- a local placeholder under `.claude/` for repo-specific practices
+- a repo-owned skill stub under `.claude/skills/` for repo-specific practices (commit it)
 - a blunt note that says what still has no good support
 
 ## Triage order

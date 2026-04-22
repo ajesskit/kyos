@@ -1,8 +1,6 @@
 # Local Codex artifacts
 .codex/
 
-# Local npm cache (used by some dry-run publish checks)
-.npm-cache/
+# Local Claude artifacts
+.claude/
 
-# Local scratch folders
-_tmp_*/
