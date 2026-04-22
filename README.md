@@ -53,6 +53,7 @@ Command behavior:
 `kyos-cli` also includes repo-local workflow prompts under `.claude/commands/`. These are intended for Claude-side usage as slash-style commands:
 
 ```text
+/kyos:prevalidate
 /kyos:architecture
 /kyos:hire
 /kyos:spec
@@ -64,6 +65,7 @@ Command behavior:
 
 Foundation commands:
 
+- `/kyos:prevalidate` runs a quick read-only safety/security scan before you start running tools or changing code.
 - `/kyos:architecture` sets or revises the repo's technical direction
 - `/kyos:hire` adds missing support around the current stack
 
