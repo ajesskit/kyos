@@ -4,9 +4,11 @@ const { getCapability, loadCatalog } = require("./catalog");
 const {
   CLAUDE_MD_FILE,
   CLAUDE_ROOT,
+  CATALOG_DIR,
   LOCK_FILE,
   MANAGED_ROOT,
   MCP_CONFIG_FILE,
+  STATE_ROOT,
   USER_CONFIG_FILE,
 } = require("./constants");
 const {
@@ -25,6 +27,18 @@ const {
   planManagedChanges,
   renderManagedFiles,
 } = require("./managed-files");
+
+const MANAGED_COMMAND_FILES = [
+  "README.md",
+  "prevalidate.md",
+  "architecture.md",
+  "hire.md",
+  "spec.md",
+  "tech.md",
+  "tasks.md",
+  "implement.md",
+  "verify.md",
+];
 
 function isPathWithinRoot(rootPath, candidatePath) {
   const relative = path.relative(rootPath, candidatePath);
@@ -58,6 +72,30 @@ function forceResetBootstrap({ cwd }) {
   }
 }
 
+function forceResetKyosOnly({ cwd }) {
+  const rootReal = fs.realpathSync.native(cwd);
+  const targets = [STATE_ROOT];
+
+  for (const relativePath of targets) {
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (!fs.existsSync(absolutePath)) {
+      continue;
+    }
+
+    const stat = fs.lstatSync(absolutePath);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`Refusing --update through symlink/junction: ${relativePath}`);
+    }
+
+    const real = fs.realpathSync.native(absolutePath);
+    if (!isPathWithinRoot(rootReal, real)) {
+      throw new Error(`Refusing --update outside repo root (path resolves outside): ${relativePath}`);
+    }
+
+    fs.rmSync(absolutePath, { recursive: true, force: true });
+  }
+}
+
 function managedCommandWrapper(filename) {
   const slug = filename.replace(/\.md$/i, "");
   const isReadme = slug.toLowerCase() === "readme";
@@ -71,7 +109,7 @@ This command is managed by kyos-cli.
 You can:
 
 - Add repo-specific notes/rules below to enrich the managed version, or
-- Replace this file entirely and (optionally) remove the “Full definition” link to rely only on yours.
+- Replace this file entirely and (optionally) remove the "Full definition" link to rely only on yours.
 
 - Full definition: [${rel}](${rel})
 
@@ -83,6 +121,13 @@ Add any repo-specific guidance here.
 
 function runBootstrap({ cwd, apply, force }) {
   const repoName = path.basename(cwd);
+  if (apply) {
+    return {
+      ok: false,
+      summary: "apply disabled",
+      errors: ["The '--apply' command is temporarily disabled pending revalidation."],
+    };
+  }
   if (force) {
     forceResetBootstrap({ cwd });
   }
@@ -106,7 +151,7 @@ function runBootstrap({ cwd, apply, force }) {
   const conflicts = plan.results.filter((item) => item.action === "conflict").length;
   const blocked = plan.results.filter((item) => item.action === "blocked").length;
 
-  if (!hasExistingClaudeSetup || apply) {
+  if (!hasExistingClaudeSetup) {
     applyManagedChanges({ cwd, plan });
     applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
   }
@@ -138,19 +183,42 @@ function runBootstrap({ cwd, apply, force }) {
   if (createdClaudeMd) {
     lines.push("");
     lines.push(
-      "We noticed that you didn't have a CLAUDE.md file, so we created one for you. However, we recommend regenerating it using Claude in planning mode for smoother interaction."
+      "We noticed that you didn't have a CLAUDE.md file, so we created one for you. However, we recommend regenerating it using Claude in planning mode for smoother interaction. Run /init in your Claude terminal"
     );
   }
 
   if (hasExistingClaudeSetup && !apply) {
+    const hasSafeActions = created + updated > 0;
+    const hasProblems = conflicts + blocked > 0;
+    const hasStale = stale.length > 0;
+
+    const warnings = ["No files were changed (analysis mode)."];
+
+    if (!hasSafeActions && !hasProblems && !hasStale) {
+      warnings.push("No changes detected; your Claude setup already matches the current baseline.");
+    } else {
+      if (hasSafeActions) {
+        warnings.push(
+          "Proposed safe changes are listed above. Apply changes manually or use '--init --force' (destructive) to reset to baseline."
+        );
+      } else {
+        warnings.push("No safe create/update actions were proposed.");
+      }
+
+      if (hasProblems) {
+        warnings.push("Some items are conflicts/blocked; kyos-cli will not overwrite locally-changed or unmanaged files.");
+      }
+
+      if (hasStale) {
+        warnings.push("Stale managed files were detected. Review them before removing anything.");
+      }
+    }
+
     return {
       ok: true,
       summary: `analysis complete: ${created} proposed additions, ${updated} proposed updates, ${conflicts} managed conflicts, ${blocked} unmanaged blockers.`,
       lines,
-      warnings: [
-        "No files were changed because this repo already has Claude configuration.",
-        "Review the proposal, then run 'npx kyos-cli --apply' to apply only safe create/update actions.",
-      ],
+      warnings,
     };
   }
 
@@ -196,21 +264,9 @@ function planLocalClaudeSeed({ cwd }) {
       "# /kyos:verify\n\nVerify behavior against the spec and plan. If it passes, suggest deleting any completed working spec files that are no longer useful.\n\nNext cycle: [/kyos:spec](./spec.md)\n",
   };
 
-  const managedCommandFiles = [
-    "README.md",
-    "prevalidate.md",
-    "architecture.md",
-    "hire.md",
-    "spec.md",
-    "tech.md",
-    "tasks.md",
-    "implement.md",
-    "verify.md",
-  ];
-
   // Seed the managed commands as short wrappers that point to `.kyos/claude/commands/`,
   // while leaving `.claude/commands/project-context.md` as repo-owned content.
-  for (const filename of managedCommandFiles) {
+  for (const filename of MANAGED_COMMAND_FILES) {
     delete seedFiles[`${CLAUDE_ROOT}/commands/${filename}`];
   }
   delete seedFiles[`${CLAUDE_ROOT}/agents/security-engineer.md`];
@@ -225,7 +281,7 @@ function planLocalClaudeSeed({ cwd }) {
     results.push({ action: "create", path: relativePath, content });
   }
 
-  for (const filename of managedCommandFiles) {
+  for (const filename of MANAGED_COMMAND_FILES) {
     const relativePath = `${CLAUDE_ROOT}/commands/${filename}`;
     const absolutePath = resolveRepoPath(cwd, relativePath);
     if (fs.existsSync(absolutePath)) {
@@ -236,6 +292,42 @@ function planLocalClaudeSeed({ cwd }) {
   }
 
   return { results };
+}
+
+function runUpdateKyos({ cwd }) {
+  const repoName = path.basename(cwd);
+
+  forceResetKyosOnly({ cwd });
+
+  const config = loadUserConfig(cwd, repoName);
+  const desiredFiles = renderManagedFiles({ cwd, config });
+  const kyosOnlyFiles = Object.fromEntries(
+    Object.entries(desiredFiles).filter(([relativePath]) => relativePath === STATE_ROOT || relativePath.startsWith(`${STATE_ROOT}/`))
+  );
+
+  const currentLock = loadLock(cwd);
+  const plan = planManagedChanges({ cwd, desiredFiles: kyosOnlyFiles, currentLock });
+  applyManagedChanges({ cwd, plan });
+
+  const created = plan.results.filter((item) => item.action === "create").length;
+  const updated = plan.results.filter((item) => item.action === "update").length;
+  const conflicts = plan.results.filter((item) => item.action === "conflict").length;
+  const blocked = plan.results.filter((item) => item.action === "blocked").length;
+
+  return {
+    ok: conflicts === 0 && blocked === 0,
+    summary: `update complete: ${created} created, ${updated} updated, ${conflicts} conflicts, ${blocked} blocked.`,
+    lines: plan.results.map((item) => {
+      if (item.reason) {
+        return `${symbolForAction(item.action)} ${item.path} (${item.reason})`;
+      }
+      return `${symbolForAction(item.action)} ${item.path}`;
+    }),
+    warnings: [
+      "Rewrote .kyos/ to the current baseline. Local changes under .kyos/ were discarded.",
+      ".claude/ and CLAUDE.md were not modified.",
+    ],
+  };
 }
 
 function applyLocalClaudeSeed({ cwd, plan }) {
@@ -300,6 +392,50 @@ function runDoctor({ cwd }) {
     warnings.push(`${stale.length} stale managed files were found.`);
   }
 
+  const commandReport = [];
+  for (const filename of MANAGED_COMMAND_FILES) {
+    const catalogPath = path.join(CATALOG_DIR, "claude-base", "claude", "commands", filename);
+    const catalogContent = fs.readFileSync(catalogPath, "utf8");
+    const catalogBytes = Buffer.byteLength(catalogContent, "utf8");
+    const catalogChecksum = sha256(catalogContent);
+
+    const managedRelativePath = `${MANAGED_ROOT}/commands/${filename}`;
+    const managedAbsolutePath = resolveRepoPath(cwd, managedRelativePath);
+    let managedNote = "missing";
+    if (fs.existsSync(managedAbsolutePath)) {
+      const managedContent = fs.readFileSync(managedAbsolutePath, "utf8");
+      const managedBytes = Buffer.byteLength(managedContent, "utf8");
+      const managedChecksum = sha256(managedContent);
+      managedNote =
+        managedChecksum === catalogChecksum
+          ? `ok (${managedBytes}B)`
+          : `differs from catalog (${managedBytes}B vs ${catalogBytes}B)`;
+    }
+
+    const localRelativePath = `${CLAUDE_ROOT}/commands/${filename}`;
+    const localAbsolutePath = resolveRepoPath(cwd, localRelativePath);
+    const wrapperContent = managedCommandWrapper(filename);
+    const wrapperBytes = Buffer.byteLength(wrapperContent, "utf8");
+    const wrapperChecksum = sha256(wrapperContent);
+
+    let localNote = "missing";
+    if (fs.existsSync(localAbsolutePath)) {
+      const localContent = fs.readFileSync(localAbsolutePath, "utf8");
+      const localBytes = Buffer.byteLength(localContent, "utf8");
+      const localChecksum = sha256(localContent);
+
+      if (localChecksum === wrapperChecksum) {
+        localNote = `wrapper ok (${localBytes}B)`;
+      } else if (localChecksum === catalogChecksum) {
+        localNote = `matches catalog (${localBytes}B)`;
+      } else {
+        localNote = `changed (${localBytes}B; catalog ${catalogBytes}B; wrapper ${wrapperBytes}B)`;
+      }
+    }
+
+    commandReport.push(`command: ${filename} local ${localNote}; managed ${managedNote}`);
+  }
+
   const mcpConfig = loadMcpConfig(cwd);
   if (!mcpConfig.mcpServers || typeof mcpConfig.mcpServers !== "object") {
     errors.push(`${MCP_CONFIG_FILE} must contain an object with an 'mcpServers' key.`);
@@ -315,6 +451,7 @@ function runDoctor({ cwd }) {
       `installed skills: ${(config.installed.skills || []).length}`,
       `installed agents: ${(config.installed.agents || []).length}`,
       `installed mcps: ${(config.installed.mcps || []).length}`,
+      ...commandReport,
     ],
     warnings,
     errors,
@@ -476,4 +613,5 @@ module.exports = {
   runAnalyze,
   runBootstrap,
   runDoctor,
+  runUpdateKyos,
 };

@@ -54,7 +54,7 @@ This repository uses a shared Claude Code bootstrap managed by ${FRAMEWORK_PACKA
 - Treat \`.kyos/claude/\` as the managed source layer.
 - Use \`.claude/\` as the repo-owned customization and override layer.
 - Run \`npx kyos-cli --init\` to install or analyze the base structure.
-- Run \`npx kyos-cli --apply\` after reviewing a proposal.
+- Review proposals from \`npx kyos-cli --init\`, then apply changes manually (or reset with \`--init --force\` if appropriate).
 `,
     [normalizeRelativePath(path.join(MANAGED_ROOT, "commands", "project-context.md"))]:
       `# Project Context\n\nCapture architecture, key commands, and testing guidance for ${repoName} here.\n\n- Baseline: ${(config.extends || ["claude-base"]).join(", ")}\n- Framework version: ${FRAMEWORK_VERSION}\n`,

@@ -8,8 +8,7 @@ From the repo root:
 
 ```powershell
 node .\bin\kyos.js --init
-node .\bin\kyos.js --apply
-node .\bin\kyos.js --doctor
+node .\bin\kyos.js --update
 ```
 
 ## Catalog
@@ -41,4 +40,3 @@ npm run pack:check
 ```powershell
 npm publish --access public --tag latest
 ```
-
