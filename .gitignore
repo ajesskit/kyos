@@ -1,0 +1,5 @@
+# Local Codex artifacts
+.codex/
+
+# Local scratch folders
+_tmp_*/
