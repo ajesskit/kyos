@@ -72,6 +72,28 @@ function forceResetBootstrap({ cwd }) {
   }
 }
 
+function ensureGitignoreHasKyos({ cwd }) {
+  const gitignorePath = resolveRepoPath(cwd, ".gitignore");
+  const entry = ".kyos/";
+
+  if (!fs.existsSync(gitignorePath)) {
+    fs.writeFileSync(gitignorePath, `${entry}\n`, "utf8");
+    return;
+  }
+
+  const current = fs.readFileSync(gitignorePath, "utf8");
+  const normalized = current.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+
+  const hasKyos = lines.some((line) => line.trim() === ".kyos" || line.trim() === ".kyos/");
+  if (hasKyos) {
+    return;
+  }
+
+  const suffix = normalized.length > 0 && !normalized.endsWith("\n") ? "\n" : "";
+  fs.writeFileSync(gitignorePath, `${normalized}${suffix}${entry}\n`, "utf8");
+}
+
 function forceResetKyosOnly({ cwd }) {
   const rootReal = fs.realpathSync.native(cwd);
   const targets = [STATE_ROOT];
@@ -154,6 +176,7 @@ function runBootstrap({ cwd, apply, force }) {
   if (!hasExistingClaudeSetup) {
     applyManagedChanges({ cwd, plan });
     applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
+    ensureGitignoreHasKyos({ cwd });
   }
 
   const combined = [...plan.results, ...localSeedPlan.results];
@@ -308,6 +331,7 @@ function runUpdateKyos({ cwd }) {
   const currentLock = loadLock(cwd);
   const plan = planManagedChanges({ cwd, desiredFiles: kyosOnlyFiles, currentLock });
   applyManagedChanges({ cwd, plan });
+  ensureGitignoreHasKyos({ cwd });
 
   const created = plan.results.filter((item) => item.action === "create").length;
   const updated = plan.results.filter((item) => item.action === "update").length;

@@ -16,6 +16,7 @@ function exists(dir, relativePath) {
 module.exports = function register(test) {
   test("bootstrap creates .kyos and .claude in a fresh repo", () => {
     const cwd = mkTempDir("kyos-flow-");
+    fs.writeFileSync(path.join(cwd, ".gitignore"), "node_modules/\n", "utf8");
     const result = runBootstrap({ cwd, apply: false });
 
     assert.equal(result.ok, true);
@@ -62,6 +63,10 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/agents/README.md"));
     assert.ok(exists(cwd, ".claude/rules/README.md"));
     assert.ok(exists(cwd, ".claude/skills/README.md"));
+
+    const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
+    assert.ok(gitignore.includes("node_modules/"));
+    assert.ok(gitignore.includes(".kyos/"));
   });
 
   test("init switches to analysis mode once Claude setup exists", () => {
