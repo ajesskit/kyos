@@ -5,9 +5,8 @@ const {
 } = require("./core/constants");
 const {
   addCapability,
-  runAnalyze,
   runBootstrap,
-  runDoctor,
+  runUpdateKyos,
 } = require("./core/workflows");
 
 function printHelp() {
@@ -15,9 +14,7 @@ function printHelp() {
 
 Usage:
   kyos-cli --init [--force]
-  kyos-cli --apply
-  kyos-cli --analyze
-  kyos-cli --doctor
+  kyos-cli --update
   kyos-cli --add skill <name>
   kyos-cli --add agent <name>
   kyos-cli --add mcp <name>
@@ -26,8 +23,8 @@ Notes:
   - Commands run against the current working directory only.
   - Use '--init' to install a base Claude structure when none exists yet.
   - If .claude/ or CLAUDE.md already exists, '--init' switches to analysis mode and proposes updates without changing files.
+  - Use '--update' to forcibly rewrite only .kyos/ to the current baseline (destructive to .kyos only).
   - Use '--force' with '--init' to reset .claude/, .kyos/, and CLAUDE.md to the current managed baseline (destructive).
-  - Use '--apply' to apply only safe create/update actions after review.
   - Managed state lives in .kyos/.
   - Managed source files live in .kyos/claude/, while repo customizations live in .claude/.
   - User-editable configuration lives in ${USER_CONFIG_FILE}.`);
@@ -77,18 +74,24 @@ async function main() {
     return;
   }
 
+  if (hasFlag("--update")) {
+    printResult(runUpdateKyos({ cwd }));
+    return;
+  }
+
   if (hasFlag("--apply")) {
-    printResult(runBootstrap({ cwd, apply: true, force }));
+    printResult({
+      ok: false,
+      errors: ["The '--apply' command is temporarily disabled pending revalidation."],
+    });
     return;
   }
 
-  if (hasFlag("--analyze")) {
-    printResult(runAnalyze({ cwd }));
-    return;
-  }
-
-  if (hasFlag("--doctor")) {
-    printResult(runDoctor({ cwd }));
+  if (hasFlag("--analyze") || hasFlag("--doctor")) {
+    printResult({
+      ok: false,
+      errors: ["The '--analyze' and '--doctor' commands are temporarily disabled pending revalidation."],
+    });
     return;
   }
 

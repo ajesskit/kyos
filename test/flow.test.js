@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const { runBootstrap, runDoctor, addCapability } = require("../src/core/workflows");
+const { runBootstrap, runDoctor, runUpdateKyos, addCapability } = require("../src/core/workflows");
 
 function mkTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -72,17 +72,43 @@ module.exports = function register(test) {
     assert.equal(result.ok, true);
     assert.ok(Array.isArray(result.warnings));
     assert.ok(result.warnings.some((w) => String(w).toLowerCase().includes("no files were changed")));
+    assert.ok(result.warnings.some((w) => String(w).toLowerCase().includes("no changes detected")));
   });
 
-  test("apply is idempotent after bootstrap", () => {
+  test("analysis warning mentions force when safe updates exist", () => {
     const cwd = mkTempDir("kyos-flow-");
     runBootstrap({ cwd, apply: false });
 
-    const result = runBootstrap({ cwd, apply: true });
+    fs.rmSync(path.join(cwd, ".kyos", "claude", "commands", "spec.md"));
+
+    const result = runBootstrap({ cwd, apply: false });
     assert.equal(result.ok, true);
+    assert.ok(result.warnings.some((w) => String(w).toLowerCase().includes("--force")));
+  });
+
+  test("doctor is ok after bootstrap", () => {
+    const cwd = mkTempDir("kyos-flow-");
+    runBootstrap({ cwd, apply: false });
 
     const doctor = runDoctor({ cwd });
     assert.equal(doctor.ok, true);
+    assert.ok(doctor.lines.some((line) => String(line).includes("command: architecture.md local wrapper ok")));
+    assert.ok(doctor.lines.some((line) => String(line).includes("command: architecture.md") && String(line).includes("managed ok")));
+  });
+
+  test("doctor reports when a .claude command wrapper changes", () => {
+    const cwd = mkTempDir("kyos-flow-");
+    runBootstrap({ cwd, apply: false });
+
+    const architecturePath = path.join(cwd, ".claude", "commands", "architecture.md");
+    const original = fs.readFileSync(architecturePath, "utf8");
+    fs.writeFileSync(architecturePath, `${original}\ncustom note\n`, "utf8");
+
+    const doctor = runDoctor({ cwd });
+    assert.equal(doctor.ok, true);
+    assert.ok(
+      doctor.lines.some((line) => String(line).includes("command: architecture.md") && String(line).includes("local changed"))
+    );
   });
 
   test("--force resets .claude/.kyos/CLAUDE.md", () => {
@@ -108,6 +134,30 @@ module.exports = function register(test) {
     assert.ok(localSpec.includes("/kyos:spec"));
 
     assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
+  });
+
+  test("--update rewrites only .kyos", () => {
+    const cwd = mkTempDir("kyos-update-");
+    runBootstrap({ cwd, apply: false });
+
+    const localSpecPath = path.join(cwd, ".claude", "commands", "spec.md");
+    fs.writeFileSync(localSpecPath, "# custom spec\n", "utf8");
+
+    const managedSpecPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    fs.writeFileSync(managedSpecPath, "# tampered managed spec\n", "utf8");
+
+    const result = runUpdateKyos({ cwd });
+    assert.equal(result.ok, true);
+
+    // .claude should be untouched
+    assert.equal(fs.readFileSync(localSpecPath, "utf8"), "# custom spec\n");
+
+    // .kyos should be regenerated to catalog baseline
+    const catalogSpec = fs.readFileSync(
+      path.join(__dirname, "..", "catalog", "claude-base", "claude", "commands", "spec.md"),
+      "utf8"
+    );
+    assert.equal(fs.readFileSync(managedSpecPath, "utf8"), catalogSpec);
   });
 
   test(".claude command wrappers are not overwritten if customized", () => {
@@ -155,7 +205,7 @@ module.exports = function register(test) {
       return;
     }
 
-    assert.throws(() => runBootstrap({ cwd, apply: true }), /symlink|junction|outside repo root/i);
+    assert.throws(() => runBootstrap({ cwd, apply: false }), /symlink|junction|outside repo root/i);
     assert.equal(exists(outside, "commands/README.md"), false);
     assert.equal(exists(outside, "settings.json"), false);
   });

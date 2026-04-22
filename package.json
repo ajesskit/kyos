@@ -1,6 +1,6 @@
 {
   "name": "kyos-cli",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Bootstrap and safely evolve a shared Claude Code repo structure.",
   "keywords": [
     "claude",
@@ -35,9 +35,6 @@
   },
   "scripts": {
     "start": "node ./bin/kyos.js --init",
-    "analyze": "node ./bin/kyos.js --analyze",
-    "apply": "node ./bin/kyos.js --apply",
-    "doctor": "node ./bin/kyos.js --doctor",
     "test": "node ./test/run.js",
     "pack:check": "npm pack --dry-run"
   },
