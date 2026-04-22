@@ -69,6 +69,12 @@ Foundation commands:
 - `/kyos:architecture` sets or revises the repo's technical direction
 - `/kyos:hire` adds missing support around the current stack
 
+## Agents
+
+The bootstrap seeds a repo-owned Claude agent prompt under `.claude/agents/`:
+
+- `security-engineer.md` for deep-dive AppSec review and a “prevalidate first” workflow.
+
 These are not the normal day-to-day commands. Use them when the repo's architecture changes, the stack expands, or the support layer falls behind.
 
 Daily delivery commands:
