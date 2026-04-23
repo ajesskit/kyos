@@ -42,7 +42,8 @@ function renderManagedFiles({ cwd, config }) {
     "implement.md",
     "verify.md",
   ];
-  const managedAgents = ["README.md", "security-engineer.md"];
+  const managedAgents = ["README.md", "security-engineer.md", "silent-executor.md"];
+  const managedSkills = ["silent-executor/SKILL.md"];
 
   const baseFiles = {
     [CLAUDE_MD_FILE]: `# ${repoName}
@@ -83,6 +84,12 @@ This repository uses a shared Claude Code bootstrap managed by ${FRAMEWORK_PACKA
   for (const filename of managedAgents) {
     baseFiles[normalizeRelativePath(path.join(MANAGED_ROOT, "agents", filename))] = readCatalogText(
       `claude-base/claude/agents/${filename}`
+    );
+  }
+
+  for (const filename of managedSkills) {
+    baseFiles[normalizeRelativePath(path.join(MANAGED_ROOT, "skills", filename))] = readCatalogText(
+      `claude-base/claude/skills/${filename}`
     );
   }
 

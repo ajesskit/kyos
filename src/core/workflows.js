@@ -40,6 +40,9 @@ const MANAGED_COMMAND_FILES = [
   "verify.md",
 ];
 
+const MANAGED_AGENT_FILES = ["silent-executor.md"];
+const MANAGED_SKILL_FILES = ["silent-executor/SKILL.md"];
+
 function isPathWithinRoot(rootPath, candidatePath) {
   const relative = path.relative(rootPath, candidatePath);
   if (relative === "") {
@@ -134,6 +137,51 @@ You can:
 - Replace this file entirely and (optionally) remove the "Full definition" link to rely only on yours.
 
 - Full definition: [${rel}](${rel})
+
+## Local additions
+
+Add any repo-specific guidance here.
+`;
+}
+
+function managedAgentWrapper(filename) {
+  const rel = `../../.kyos/claude/agents/${filename}`;
+  return `---
+model: haiku
+---
+
+# Silent Executor (Managed)
+
+This agent is managed by kyos-cli.
+
+- Full definition: [${rel}](${rel})
+
+## How to use
+
+Read the full definition file above and follow it as the source of truth.
+
+## Local additions
+
+Add any repo-specific guidance here.
+`;
+}
+
+function managedSkillWrapper(relativePathFromSkillsRoot, { name, description }) {
+  const rel = `../../../.kyos/claude/skills/${relativePathFromSkillsRoot}`;
+  return `---
+name: ${name}
+description: ${description}
+---
+
+# Silent Executor (Managed)
+
+This skill is managed by kyos-cli.
+
+- Full definition: [${rel}](${rel})
+
+## How to use
+
+Read the full definition file above and follow it as the source of truth.
 
 ## Local additions
 
@@ -261,14 +309,10 @@ function planLocalClaudeSeed({ cwd }) {
       "# Project Context (Repo-Owned)\n\nCapture architecture, key commands, and testing guidance for this repository here.\n\n- What are we building?\n- What are the main components (UI/API/workers)?\n- What are the key external dependencies?\n- How do we run tests and validate changes?\n",
     [`${CLAUDE_ROOT}/agents/README.md`]:
       "# Local Agents\n\nPut repo-specific agents here. This folder is intentionally yours; kyos will not overwrite local agents.\n\n## Available agents\n\n- `silent-executor/` — execution-focused Haiku agent with concise outputs.\n- `security-engineer.md` — deep-dive AppSec mindset for threat modeling, code review, and actionable remediations.\n",
-    [`${CLAUDE_ROOT}/agents/silent-executor/README.md`]:
-      "---\nmodel: haiku\n---\n\nYou are an execution-focused agent.\n\n- Prefer direct execution over explanation\n- Keep outputs concise\n- Delegate complex work to tools/skills when needed\n\n## Skill\n\nFollow the repo skill: [`silent-executor`](../../skills/silent-executor/skill.md)\n",
     [`${CLAUDE_ROOT}/agents/security-engineer.md`]:
       "# Security Engineer (Deep Dive)\n\nYou are a pragmatic security engineer. You apply modern best practices, dig deeply into code and system behavior, and communicate clearly about risk and fixes.\n\n## Prevalidation gate (before doing work in a repo)\n\nWhen asked to work in an unfamiliar repo (or before running scripts/tests/tools), **prevalidate first**:\n\n1. Identify risky operations you might be asked to run (install scripts, formatters, “download then execute”, DB migrations).\n2. Scan for obvious red flags (committed secrets, unsafe shelling out, dangerous defaults).\n3. Confirm the safest “next command” to run (smallest, read-only, or dry-run).\n4. Only proceed to implementation after reporting the prevalidation results and any required guardrails.\n\nIf available, use `/kyos:prevalidate` and summarize its output before starting changes.\n\n## How you work\n\n- Prefer evidence over guesses: cite concrete code paths, configs, and behaviors.\n- Think in trust boundaries and data flows: sources → transforms → sinks.\n- Prioritize by impact × likelihood × ease-of-exploitation.\n- Recommend the smallest safe fix first; avoid breaking changes unless required.\n- Be explicit about assumptions and unknowns; ask targeted questions when needed.\n\n## Default workflow\n\n1. Scope & assets: what’s in scope, who are the actors, what data matters.\n2. Threat model: entry points, trust boundaries, high-priv capabilities.\n3. Attack surface review: inputs, authn/authz, session/token handling, data validation.\n4. Findings: impact, exploit scenario, evidence, severity.\n5. Remediation: preferred fix + safe alternatives; note migrations/gotchas.\n6. Verification: tests and manual steps to confirm the fix.\n\n## Common high-signal checks\n\n- Authz: IDOR/BOLA, missing role checks, privilege escalation.\n- Injection: SQL/NoSQL/command/template; unsafe deserialization.\n- Web: XSS, CSRF, open redirect, CORS misconfig.\n- SSRF: URL fetchers, webhooks, “download this URL”.\n- Secrets: hardcoded creds, secrets in logs/URLs, overly broad scopes.\n- DoS: unbounded payloads, expensive regex/queries, missing timeouts/rate limits.\n- Supply chain: “download then execute”, unpinned deps, unsafe CI.\n\n## Output format (use by default)\n\n- Summary: 3–6 bullets with the most important risks and next actions.\n- Findings (repeat per finding):\n  - Title\n  - Severity (Critical/High/Medium/Low/Info)\n  - Impact\n  - Exploit scenario / Preconditions\n  - Evidence (files/functions/configs; repro steps if safe)\n  - Fix (preferred + alternatives)\n  - Verification\n\n## Safety\n\nDo not provide instructions intended to facilitate real-world wrongdoing. Use minimal, controlled PoCs and harmless payloads when demonstrating issues.\n",
     [`${CLAUDE_ROOT}/skills/README.md`]:
       "# Local Skills\n\nPut repo-specific skills here. These are repo-owned instructions that complement the managed base under `.kyos/claude/`.\n",
-    [`${CLAUDE_ROOT}/skills/silent-executor/skill.md`]:
-      "# Silent execution mode:\n\n- Plan internally, do not output the plan\n- No explanations, no summaries, no repetition\n- Output only final result\n- Ask only if blocked\n",
     [`${CLAUDE_ROOT}/rules/README.md`]:
       "# Local Rules\n\nPut repo-specific working rules here (coding standards, review expectations, release rules, security notes).\n",
     [`${CLAUDE_ROOT}/commands/README.md`]:
@@ -316,6 +360,33 @@ function planLocalClaudeSeed({ cwd }) {
       continue;
     }
     results.push({ action: "create", path: relativePath, content: managedCommandWrapper(filename) });
+  }
+
+  for (const filename of MANAGED_AGENT_FILES) {
+    const relativePath = `${CLAUDE_ROOT}/agents/${filename}`;
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (fs.existsSync(absolutePath)) {
+      results.push({ action: "ok", path: relativePath });
+      continue;
+    }
+    results.push({ action: "create", path: relativePath, content: managedAgentWrapper(filename) });
+  }
+
+  for (const relativePathFromSkillsRoot of MANAGED_SKILL_FILES) {
+    const relativePath = `${CLAUDE_ROOT}/skills/${relativePathFromSkillsRoot}`;
+    const absolutePath = resolveRepoPath(cwd, relativePath);
+    if (fs.existsSync(absolutePath)) {
+      results.push({ action: "ok", path: relativePath });
+      continue;
+    }
+    results.push({
+      action: "create",
+      path: relativePath,
+      content: managedSkillWrapper(relativePathFromSkillsRoot, {
+        name: "silent-executor",
+        description: "Execution-first mode with minimal narration.",
+      }),
+    });
   }
 
   return { results };
@@ -530,10 +601,14 @@ function addCapability({ cwd, type, name }) {
     };
   }
 
-  const folderName = normalizedType === "skill" ? "skills" : "agents";
-  const targetRelativePath = `${CLAUDE_ROOT}/${folderName}/${name}/README.md`;
+  let targetRelativePath;
+  if (normalizedType === "skill") {
+    targetRelativePath = `${CLAUDE_ROOT}/skills/${name}/SKILL.md`;
+  } else {
+    targetRelativePath = `${CLAUDE_ROOT}/agents/${name}.md`;
+  }
   writeRepoTextFile(cwd, targetRelativePath, createOverrideTemplate({ type: normalizedType, name, capability }));
-  addInstalledCapability(config, `${folderName}`, name);
+  addInstalledCapability(config, normalizedType === "skill" ? "skills" : "agents", name);
   saveUserConfig(cwd, config);
 
   return {
@@ -569,12 +644,28 @@ function validateCapabilityName(name) {
   return null;
 }
 
+function normalizeSkillFrontmatterName(identifier) {
+  return String(identifier)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
+}
+
 function createOverrideTemplate({ type, name, capability }) {
-  const title = `${type[0].toUpperCase()}${type.slice(1)} Override: ${name}`;
   const description = capability && capability.description
     ? capability.description
     : `Local ${type} customizations for ${name}.`;
 
+  if (type === "skill") {
+    const frontmatterName = normalizeSkillFrontmatterName(name);
+    const safeName = frontmatterName || "custom-skill";
+    return `---\nname: ${safeName}\ndescription: ${description}\n---\n\n# ${name}\n\n${description}\n\n## Purpose\n\nDescribe what this skill should help Claude do in this repo.\n\n## Instructions\n\n- Add the concrete behavior, constraints, and output contract here.\n- Keep it repo-specific and actionable.\n`;
+  }
+
+  const title = `${type[0].toUpperCase()}${type.slice(1)} Override: ${name}`;
   return `# ${title}
 
 ${description}
