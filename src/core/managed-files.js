@@ -43,7 +43,7 @@ function renderManagedFiles({ cwd, config }) {
     "verify.md",
   ];
   const managedAgents = ["README.md", "security-engineer.md", "silent-executor.md"];
-  const managedSkills = ["silent-executor/SKILL.md"];
+  const managedSkills = ["silent-execution/SKILL.md"];
 
   const baseFiles = {
     [CLAUDE_MD_FILE]: `# ${repoName}

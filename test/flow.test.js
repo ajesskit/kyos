@@ -30,7 +30,7 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
     assert.ok(exists(cwd, ".kyos/claude/agents/security-engineer.md"));
     assert.ok(exists(cwd, ".kyos/claude/agents/silent-executor.md"));
-    assert.ok(exists(cwd, ".kyos/claude/skills/silent-executor/SKILL.md"));
+    assert.ok(exists(cwd, ".kyos/claude/skills/silent-execution/SKILL.md"));
 
     assert.ok(exists(cwd, ".claude/commands/README.md"));
     assert.ok(exists(cwd, ".claude/commands/spec.md"));
@@ -70,7 +70,7 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/agents/README.md"));
     assert.ok(exists(cwd, ".claude/rules/README.md"));
     assert.ok(exists(cwd, ".claude/skills/README.md"));
-    assert.ok(exists(cwd, ".claude/skills/silent-executor/SKILL.md"));
+    assert.ok(exists(cwd, ".claude/skills/silent-execution/SKILL.md"));
 
     const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
     assert.ok(gitignore.includes("node_modules/"));
