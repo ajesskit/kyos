@@ -1,5 +1,5 @@
 ---
-name: silent-executor
+name: silent-execution
 description: Execution-first mode with minimal narration.
 ---
 
