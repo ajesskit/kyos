@@ -11,13 +11,14 @@ It also ships workflow prompts like `/kyos:architecture` and `/kyos:hire` for bi
 ## Quickstart
 
 ```powershell
-npx kyos --init
+npx kyos-cli --init
 ```
 
 Behavior:
 
 - If the repo has no Claude setup yet, `--init` bootstraps `CLAUDE.md`, `.claude/`, and `.kyos/`.
 - It also seeds a default `silent-executor` agent (Haiku) and its paired `silent-executor` skill so repos have a concise, execution-first mode available immediately.
+- Commands, agents, and skills live under `.kyos/claude/` as the managed source of truth; `.claude/` contains thin wrappers that link to the managed definitions (so updates are repeatable without overwriting local edits).
 
 ## CLI commands
 

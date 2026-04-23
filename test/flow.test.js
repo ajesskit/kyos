@@ -29,16 +29,18 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".kyos/claude/commands/README.md"));
     assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
     assert.ok(exists(cwd, ".kyos/claude/agents/security-engineer.md"));
+    assert.ok(exists(cwd, ".kyos/claude/agents/silent-executor.md"));
+    assert.ok(exists(cwd, ".kyos/claude/skills/silent-executor/SKILL.md"));
 
     assert.ok(exists(cwd, ".claude/commands/README.md"));
     assert.ok(exists(cwd, ".claude/commands/spec.md"));
     assert.ok(exists(cwd, ".claude/commands/architecture.md"));
     assert.equal(exists(cwd, ".claude/agents/security-engineer.md"), false);
-    assert.ok(exists(cwd, ".claude/agents/silent-executor/README.md"));
+    assert.ok(exists(cwd, ".claude/agents/silent-executor.md"));
 
-    const silentExecutor = fs.readFileSync(path.join(cwd, ".claude", "agents", "silent-executor", "README.md"), "utf8");
+    const silentExecutor = fs.readFileSync(path.join(cwd, ".claude", "agents", "silent-executor.md"), "utf8");
     assert.ok(silentExecutor.includes("model: haiku"));
-    assert.ok(silentExecutor.includes("../../skills/silent-executor/skill.md"));
+    assert.ok(silentExecutor.includes("../../.kyos/claude/agents/silent-executor.md"));
 
     const managedSpec = fs.readFileSync(path.join(cwd, ".kyos", "claude", "commands", "spec.md"), "utf8");
     const localSpec = fs.readFileSync(path.join(cwd, ".claude", "commands", "spec.md"), "utf8");
@@ -68,7 +70,7 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/agents/README.md"));
     assert.ok(exists(cwd, ".claude/rules/README.md"));
     assert.ok(exists(cwd, ".claude/skills/README.md"));
-    assert.ok(exists(cwd, ".claude/skills/silent-executor/skill.md"));
+    assert.ok(exists(cwd, ".claude/skills/silent-executor/SKILL.md"));
 
     const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
     assert.ok(gitignore.includes("node_modules/"));
@@ -231,7 +233,7 @@ module.exports = function register(test) {
 
     const result = addCapability({ cwd, type: "skill", name: "release-notes" });
     assert.equal(result.ok, true);
-    assert.ok(exists(cwd, ".claude/skills/release-notes/README.md"));
+    assert.ok(exists(cwd, ".claude/skills/release-notes/SKILL.md"));
   });
 
   test("refuses to write through a symlink/junction parent (when supported)", (t) => {
