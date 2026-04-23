@@ -26,7 +26,6 @@
     "bin/",
     "catalog/",
     "src/",
-    "test/",
     "README.md",
     "LICENSE"
   ],
@@ -36,6 +35,7 @@
   "scripts": {
     "start": "node ./bin/kyos.js --init",
     "test": "node ./test/run.js",
+    "prepack": "npm test",
     "pack:check": "npm pack --dry-run"
   },
   "engines": {

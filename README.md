@@ -1,4 +1,4 @@
-# kyos
+# kyos-cli
 
 [![npm](https://img.shields.io/npm/v/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![npm downloads](https://img.shields.io/npm/dm/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
@@ -10,7 +10,7 @@ It also ships workflow prompts like `/kyos:architecture` and `/kyos:hire` for bi
 ## Quickstart
 
 ```powershell
-npx kyos-cli --init
+npx kyos --init
 ```
 
 Behavior:
@@ -21,8 +21,8 @@ Behavior:
 
 Supported entrypoints:
 
-- `npx kyos-cli --init [--force]`
-- `npx kyos-cli --update` (destructive to `.kyos/` only) get latest commmands updates
+- `npx kyos --init [--force]` (alias: `npx kyos-cli --init [--force]`)
+- `npx kyos --update` (destructive to `.kyos/` only)
 
 ## Workflow commands
 
@@ -80,7 +80,7 @@ This uses a split architecture:
 In this prototype, the catalog layer is represented by `catalog/registry.json`.
 
 ## Installed layout
- 
+
 ```text
 CLAUDE.md
 .claude/

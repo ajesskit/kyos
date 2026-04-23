@@ -56,4 +56,3 @@ When using this command, Claude should:
 ## Next in flow
 
 Continue with [`/kyos:verify`](./verify.md) once the implementation slice is ready to be checked.
-
