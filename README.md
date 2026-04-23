@@ -1,5 +1,6 @@
 # kyos-cli
 
+[![Socket Badge](https://badge.socket.dev/npm/package/kyos-cli)](https://socket.dev/npm/package/kyos-cli)
 [![npm](https://img.shields.io/npm/v/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![npm downloads](https://img.shields.io/npm/dm/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 
@@ -16,6 +17,7 @@ npx kyos --init
 Behavior:
 
 - If the repo has no Claude setup yet, `--init` bootstraps `CLAUDE.md`, `.claude/`, and `.kyos/`.
+- It also seeds a default `silent-executor` agent (Haiku) and its paired `silent-executor` skill so repos have a concise, execution-first mode available immediately.
 
 ## CLI commands
 

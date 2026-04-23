@@ -54,6 +54,13 @@ Claude should push toward concrete answers in areas like:
 - when there are tradeoffs, name them directly
 - when a decision is provisional, say that clearly
 
+## Interaction rules
+
+- treat this as a guided interview: ask one question at a time until decisions are explicit and shared
+- walk the design tree depth-first, resolving prerequisite decisions before downstream choices
+- for each question, include your recommended answer (plus a brief rationale) and wait for confirmation
+- if a question can be answered by inspecting the repo, explore the codebase/config first instead of asking
+
 ## Example prompts
 
 ```text
