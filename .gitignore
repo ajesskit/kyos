@@ -4,3 +4,6 @@
 # Local Claude artifacts
 .claude/
 
+# Local npm artifacts
+.npm-cache/
+*.tgz

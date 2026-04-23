@@ -34,6 +34,11 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/commands/spec.md"));
     assert.ok(exists(cwd, ".claude/commands/architecture.md"));
     assert.equal(exists(cwd, ".claude/agents/security-engineer.md"), false);
+    assert.ok(exists(cwd, ".claude/agents/silent-executor/README.md"));
+
+    const silentExecutor = fs.readFileSync(path.join(cwd, ".claude", "agents", "silent-executor", "README.md"), "utf8");
+    assert.ok(silentExecutor.includes("model: haiku"));
+    assert.ok(silentExecutor.includes("../../skills/silent-executor/skill.md"));
 
     const managedSpec = fs.readFileSync(path.join(cwd, ".kyos", "claude", "commands", "spec.md"), "utf8");
     const localSpec = fs.readFileSync(path.join(cwd, ".claude", "commands", "spec.md"), "utf8");
@@ -63,10 +68,43 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/agents/README.md"));
     assert.ok(exists(cwd, ".claude/rules/README.md"));
     assert.ok(exists(cwd, ".claude/skills/README.md"));
+    assert.ok(exists(cwd, ".claude/skills/silent-executor/skill.md"));
 
     const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
     assert.ok(gitignore.includes("node_modules/"));
     assert.ok(gitignore.includes(".kyos/"));
+  });
+
+  test("bootstrap creates .gitignore with .kyos/ when missing", () => {
+    const cwd = mkTempDir("kyos-gitignore-missing-");
+
+    const result = runBootstrap({ cwd, apply: false });
+    assert.equal(result.ok, true);
+
+    const gitignorePath = path.join(cwd, ".gitignore");
+    assert.ok(fs.existsSync(gitignorePath));
+
+    const gitignore = fs.readFileSync(gitignorePath, "utf8");
+    assert.ok(gitignore.includes(".kyos/"));
+  });
+
+  test("bootstrap appends .kyos/ to an existing .gitignore", () => {
+    const cwd = mkTempDir("kyos-gitignore-existing-");
+    fs.writeFileSync(path.join(cwd, ".gitignore"), "node_modules/\n", "utf8");
+
+    const result = runBootstrap({ cwd, apply: false });
+    assert.equal(result.ok, true);
+
+    const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
+    assert.ok(gitignore.includes("node_modules/"));
+
+    const lines = gitignore.replace(/\r\n/g, "\n").split("\n");
+    const kyosCount = lines.filter((line) => {
+      const trimmed = line.trim();
+      return trimmed === ".kyos" || trimmed === ".kyos/";
+    }).length;
+
+    assert.equal(kyosCount, 1);
   });
 
   test("init switches to analysis mode once Claude setup exists", () => {
