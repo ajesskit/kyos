@@ -36,7 +36,8 @@
     "start": "node ./bin/kyos.js --init",
     "test": "node ./test/run.js",
     "prepack": "npm test",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "release": "node scripts/release.js"
   },
   "engines": {
     "node": ">=18"

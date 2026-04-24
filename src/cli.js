@@ -5,7 +5,9 @@ const {
 } = require("./core/constants");
 const {
   addCapability,
+  runApply,
   runBootstrap,
+  runDoctor,
   runUpdateKyos,
 } = require("./core/workflows");
 
@@ -14,17 +16,19 @@ function printHelp() {
 
 Usage:
   kyos-cli --init [--force]
+  kyos-cli --apply
   kyos-cli --update
-  kyos-cli --add skill <name>
-  kyos-cli --add agent <name>
-  kyos-cli --add mcp <name>
-
+  kyos-cli --add <skill|agent|mcp> <name>
+  kyos-cli --doctor
 Notes:
   - Commands run against the current working directory only.
   - Use '--init' to install a base Claude structure when none exists yet.
   - If .claude/ or CLAUDE.md already exists, '--init' switches to analysis mode and proposes updates without changing files.
+  - Use '--apply' to write managed files that are missing from the repo (create-only, never overwrites existing files).
   - Use '--update' to forcibly rewrite only .kyos/ to the current baseline (destructive to .kyos only).
   - Use '--force' with '--init' to reset .claude/, .kyos/, and CLAUDE.md to the current managed baseline (destructive).
+  - Use '--add' to install a skill, agent, or MCP from the catalog.
+  - Use '--doctor' to check managed file integrity and report drift.
   - Managed state lives in .kyos/.
   - Managed source files live in .kyos/claude/, while repo customizations live in .claude/.
   - User-editable configuration lives in ${USER_CONFIG_FILE}.`);
@@ -80,18 +84,19 @@ async function main() {
   }
 
   if (hasFlag("--apply")) {
-    printResult({
-      ok: false,
-      errors: ["The '--apply' command is temporarily disabled pending revalidation."],
-    });
+    if (force) {
+      printResult({
+        ok: false,
+        errors: ["--apply and --force cannot be used together. Use '--init --force' to reset everything to baseline."],
+      });
+      return;
+    }
+    printResult(runApply({ cwd }));
     return;
   }
 
-  if (hasFlag("--analyze") || hasFlag("--doctor")) {
-    printResult({
-      ok: false,
-      errors: ["The '--analyze' and '--doctor' commands are temporarily disabled pending revalidation."],
-    });
+  if (hasFlag("--doctor")) {
+    printResult(runDoctor({ cwd }));
     return;
   }
 

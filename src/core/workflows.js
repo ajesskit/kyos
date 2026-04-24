@@ -28,20 +28,32 @@ const {
   renderManagedFiles,
 } = require("./managed-files");
 
-const MANAGED_COMMAND_FILES = [
-  "README.md",
-  "prevalidate.md",
-  "architecture.md",
-  "hire.md",
-  "spec.md",
-  "tech.md",
-  "tasks.md",
-  "implement.md",
-  "verify.md",
-];
+function readFrontmatterField(absolutePath, field) {
+  if (!fs.existsSync(absolutePath)) return null;
+  const content = fs.readFileSync(absolutePath, "utf8");
+  const match = content.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
+  return match ? match[1].trim() : null;
+}
 
-const MANAGED_AGENT_FILES = ["silent-executor.md"];
-const MANAGED_SKILL_FILES = ["silent-execution/SKILL.md"];
+function walkSkillFiles(skillsRoot) {
+  if (!fs.existsSync(skillsRoot)) return [];
+  return fs.readdirSync(skillsRoot, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .flatMap((dir) => {
+      const skillFile = path.join(skillsRoot, dir.name, "SKILL.md");
+      return fs.existsSync(skillFile) ? [`${dir.name}/SKILL.md`] : [];
+    });
+}
+
+function loadManagedManifest() {
+  const base = path.join(CATALOG_DIR, "claude-base", "claude");
+  const commands = fs.readdirSync(path.join(base, "commands")).filter((f) => f.endsWith(".md"));
+  const skills = walkSkillFiles(path.join(base, "skills"));
+  // Only agents in registry baseline get .claude/ wrappers; other catalog agents are managed-only.
+  const catalog = loadCatalog();
+  const agents = ((catalog.baseline || {}).agents || []).map((name) => `${name}.md`);
+  return { commands, agents, skills };
+}
 
 function isPathWithinRoot(rootPath, candidatePath) {
   const relative = path.relative(rootPath, candidatePath);
@@ -75,26 +87,21 @@ function forceResetBootstrap({ cwd }) {
   }
 }
 
-function ensureGitignoreHasKyos({ cwd }) {
-  const gitignorePath = resolveRepoPath(cwd, ".gitignore");
-  const entry = ".kyos/";
-
-  if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, `${entry}\n`, "utf8");
+function ensureLineInFile(absolutePath, line) {
+  if (!fs.existsSync(absolutePath)) {
+    fs.writeFileSync(absolutePath, `${line}\n`, "utf8");
     return;
   }
-
-  const current = fs.readFileSync(gitignorePath, "utf8");
+  const current = fs.readFileSync(absolutePath, "utf8");
   const normalized = current.replace(/\r\n/g, "\n");
-  const lines = normalized.split("\n");
-
-  const hasKyos = lines.some((line) => line.trim() === ".kyos" || line.trim() === ".kyos/");
-  if (hasKyos) {
-    return;
-  }
-
+  const already = normalized.split("\n").some((l) => l.trim() === line.trim());
+  if (already) return;
   const suffix = normalized.length > 0 && !normalized.endsWith("\n") ? "\n" : "";
-  fs.writeFileSync(gitignorePath, `${normalized}${suffix}${entry}\n`, "utf8");
+  fs.writeFileSync(absolutePath, `${normalized}${suffix}${line}\n`, "utf8");
+}
+
+function ensureGitignoreHasKyos({ cwd }) {
+  ensureLineInFile(resolveRepoPath(cwd, ".gitignore"), ".kyos/");
 }
 
 function forceResetKyosOnly({ cwd }) {
@@ -272,7 +279,7 @@ function runBootstrap({ cwd, apply, force }) {
     } else {
       if (hasSafeActions) {
         warnings.push(
-          "Proposed safe changes are listed above. Apply changes manually or use '--init --force' (destructive) to reset to baseline."
+          "Proposed safe changes are listed above. Run '--apply' to write missing files, or '--init --force' to reset everything to baseline (destructive)."
         );
       } else {
         warnings.push("No safe create/update actions were proposed.");
@@ -337,11 +344,15 @@ function planLocalClaudeSeed({ cwd }) {
       "# /kyos:verify\n\nVerify behavior against the spec and plan. If it passes, suggest deleting any completed working spec files that are no longer useful.\n\nNext cycle: [/kyos:spec](./spec.md)\n",
   };
 
+  const manifest = loadManagedManifest();
+
   // Seed the managed commands as short wrappers that point to `.kyos/claude/commands/`,
   // while leaving `.claude/commands/project-context.md` as repo-owned content.
-  for (const filename of MANAGED_COMMAND_FILES) {
+  for (const filename of manifest.commands) {
     delete seedFiles[`${CLAUDE_ROOT}/commands/${filename}`];
   }
+  // security-engineer ships in .kyos/ as catalog content but is not seeded to .claude/
+  // (repo teams add it themselves if they want it; it's not a wrapper pattern).
   delete seedFiles[`${CLAUDE_ROOT}/agents/security-engineer.md`];
 
   const results = [];
@@ -354,7 +365,7 @@ function planLocalClaudeSeed({ cwd }) {
     results.push({ action: "create", path: relativePath, content });
   }
 
-  for (const filename of MANAGED_COMMAND_FILES) {
+  for (const filename of manifest.commands) {
     const relativePath = `${CLAUDE_ROOT}/commands/${filename}`;
     const absolutePath = resolveRepoPath(cwd, relativePath);
     if (fs.existsSync(absolutePath)) {
@@ -364,7 +375,7 @@ function planLocalClaudeSeed({ cwd }) {
     results.push({ action: "create", path: relativePath, content: managedCommandWrapper(filename) });
   }
 
-  for (const filename of MANAGED_AGENT_FILES) {
+  for (const filename of manifest.agents) {
     const relativePath = `${CLAUDE_ROOT}/agents/${filename}`;
     const absolutePath = resolveRepoPath(cwd, relativePath);
     if (fs.existsSync(absolutePath)) {
@@ -374,20 +385,20 @@ function planLocalClaudeSeed({ cwd }) {
     results.push({ action: "create", path: relativePath, content: managedAgentWrapper(filename) });
   }
 
-  for (const relativePathFromSkillsRoot of MANAGED_SKILL_FILES) {
+  for (const relativePathFromSkillsRoot of manifest.skills) {
     const relativePath = `${CLAUDE_ROOT}/skills/${relativePathFromSkillsRoot}`;
     const absolutePath = resolveRepoPath(cwd, relativePath);
     if (fs.existsSync(absolutePath)) {
       results.push({ action: "ok", path: relativePath });
       continue;
     }
+    const skillName = relativePathFromSkillsRoot.split("/")[0];
+    const catalogSkillPath = path.join(CATALOG_DIR, "claude-base", "claude", "skills", relativePathFromSkillsRoot);
+    const description = readFrontmatterField(catalogSkillPath, "description") || `Managed skill: ${skillName}.`;
     results.push({
       action: "create",
       path: relativePath,
-      content: managedSkillWrapper(relativePathFromSkillsRoot, {
-        name: "silent-execution",
-        description: "Execution-first mode with minimal narration.",
-      }),
+      content: managedSkillWrapper(relativePathFromSkillsRoot, { name: skillName, description }),
     });
   }
 
@@ -440,24 +451,6 @@ function applyLocalClaudeSeed({ cwd, plan }) {
   }
 }
 
-function runAnalyze({ cwd }) {
-  const repoName = path.basename(cwd);
-  const config = loadUserConfig(cwd, repoName);
-  const desiredFiles = renderManagedFiles({ cwd, config });
-  const currentLock = loadLock(cwd);
-  const plan = planManagedChanges({ cwd, desiredFiles, currentLock });
-  const stale = findStaleManagedFiles(cwd, desiredFiles, currentLock);
-
-  return {
-    ok: true,
-    summary: "analysis summary",
-    lines: [
-      ...plan.results.map((item) => formatProposalLine(item)),
-      ...stale.map((pathName) => `! ${pathName} (stale managed file)`),
-    ],
-  };
-}
-
 function runDoctor({ cwd }) {
   const warnings = [];
   const errors = [];
@@ -493,8 +486,9 @@ function runDoctor({ cwd }) {
     warnings.push(`${stale.length} stale managed files were found.`);
   }
 
+  const { commands: managedCommands } = loadManagedManifest();
   const commandReport = [];
-  for (const filename of MANAGED_COMMAND_FILES) {
+  for (const filename of managedCommands) {
     const catalogPath = path.join(CATALOG_DIR, "claude-base", "claude", "commands", filename);
     const catalogContent = fs.readFileSync(catalogPath, "utf8");
     const catalogBytes = Buffer.byteLength(catalogContent, "utf8");
@@ -580,6 +574,17 @@ function addCapability({ cwd, type, name }) {
   const config = loadUserConfig(cwd, repoName);
   const catalog = loadCatalog();
   const capability = getCapability(catalog, normalizedType, name);
+
+  if (normalizedType !== "mcp") {
+    const baselineKey = normalizedType === "skill" ? "skills" : "agents";
+    const baselineNames = (catalog.baseline || {})[baselineKey] || [];
+    if (baselineNames.includes(name)) {
+      return {
+        ok: true,
+        summary: `'${name}' is included in the baseline — seeded automatically by --init. No --add needed.`,
+      };
+    }
+  }
 
   if (normalizedType === "mcp") {
     if (!capability) {
@@ -729,9 +734,64 @@ function symbolForAction(action) {
   }
 }
 
+function runApply({ cwd }) {
+  if (!detectExistingClaudeSetup(cwd)) {
+    return { ok: true, summary: "Nothing to apply. Run --init to bootstrap." };
+  }
+
+  const repoName = path.basename(cwd);
+  const config = loadUserConfig(cwd, repoName);
+  const desiredFiles = renderManagedFiles({ cwd, config });
+  const currentLock = loadLock(cwd);
+  const plan = planManagedChanges({ cwd, desiredFiles, currentLock });
+  const localSeedPlan = planLocalClaudeSeed({ cwd });
+  const stale = findStaleManagedFiles(cwd, desiredFiles, currentLock);
+
+  const createOnlyResults = plan.results.filter((item) => item.action === "create");
+  const createOnlyLockFiles = { ...(currentLock.files || {}) };
+  for (const item of createOnlyResults) {
+    createOnlyLockFiles[item.path] = { checksum: sha256(item.content), managed: true };
+  }
+
+  applyManagedChanges({ cwd, plan: { results: createOnlyResults, finalLockFiles: createOnlyLockFiles } });
+  applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
+  ensureGitignoreHasKyos({ cwd });
+
+  const seedCreated = localSeedPlan.results.filter((item) => item.action === "create").length;
+  const created = createOnlyResults.length + seedCreated;
+  const skipped = plan.results.filter(
+    (item) => item.action === "update" || item.action === "conflict" || item.action === "blocked"
+  ).length;
+
+  const lines = plan.results
+    .filter((item) => item.action !== "ok")
+    .map((item) =>
+      item.action === "create"
+        ? `+ ${item.path}`
+        : `~ ${item.path} (skipped, already exists)`
+    );
+
+  for (const item of localSeedPlan.results) {
+    if (item.action === "create") {
+      lines.push(`+ ${item.path}`);
+    }
+  }
+
+  for (const stalePath of stale) {
+    lines.push(`! ${stalePath} (managed previously but no longer part of the current base set)`);
+  }
+
+  return {
+    ok: true,
+    summary: `apply complete: ${created} created, ${skipped} skipped.`,
+    lines,
+    warnings: stale.length > 0 ? ["Stale managed files were detected. Review them before removing anything."] : [],
+  };
+}
+
 module.exports = {
   addCapability,
-  runAnalyze,
+  runApply,
   runBootstrap,
   runDoctor,
   runUpdateKyos,

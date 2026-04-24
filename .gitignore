@@ -4,6 +4,11 @@
 # Local Claude artifacts
 .claude/
 
+# Local Kyos artifacts
+.kyos/
+
 # Local npm artifacts
 .npm-cache/
 *.tgz
+
+execution/

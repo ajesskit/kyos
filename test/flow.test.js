@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
-const { runBootstrap, runDoctor, runUpdateKyos, addCapability } = require("../src/core/workflows");
+const { runApply, runBootstrap, runDoctor, runUpdateKyos, addCapability } = require("../src/core/workflows");
 
 function mkTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -236,6 +236,89 @@ module.exports = function register(test) {
     assert.ok(exists(cwd, ".claude/skills/release-notes/SKILL.md"));
   });
 
+  test("--apply on a fresh dir with no Claude setup returns info and does nothing", () => {
+    const cwd = mkTempDir("kyos-apply-fresh-");
+    const result = runApply({ cwd });
+    assert.equal(result.ok, true);
+    assert.ok(result.summary.includes("Nothing to apply"));
+    assert.equal(exists(cwd, "CLAUDE.md"), false);
+    assert.equal(exists(cwd, ".kyos"), false);
+  });
+
+  test("--apply after bootstrap creates nothing (all files already exist)", () => {
+    const cwd = mkTempDir("kyos-apply-noop-");
+    runBootstrap({ cwd, apply: false });
+
+    const result = runApply({ cwd });
+    assert.equal(result.ok, true);
+    assert.ok(result.summary.includes("0 created"));
+  });
+
+  test("--apply creates a missing managed file without touching other files", () => {
+    const cwd = mkTempDir("kyos-apply-missing-");
+    runBootstrap({ cwd, apply: false });
+
+    const specPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    const originalSpec = fs.readFileSync(specPath, "utf8");
+    fs.rmSync(specPath);
+
+    const localSpecPath = path.join(cwd, ".claude", "commands", "spec.md");
+    fs.writeFileSync(localSpecPath, "# custom spec\n", "utf8");
+
+    const result = runApply({ cwd });
+    assert.equal(result.ok, true);
+    assert.ok(result.summary.includes("1 created"));
+
+    assert.ok(exists(cwd, ".kyos/claude/commands/spec.md"));
+    assert.equal(fs.readFileSync(specPath, "utf8"), originalSpec);
+
+    assert.equal(fs.readFileSync(localSpecPath, "utf8"), "# custom spec\n");
+  });
+
+  test("--apply skips files that already exist on disk", () => {
+    const cwd = mkTempDir("kyos-apply-skip-");
+    runBootstrap({ cwd, apply: false });
+
+    const claudeMdPath = path.join(cwd, "CLAUDE.md");
+    fs.writeFileSync(claudeMdPath, "# custom\n", "utf8");
+
+    const result = runApply({ cwd });
+    assert.equal(result.ok, true);
+
+    assert.equal(fs.readFileSync(claudeMdPath, "utf8"), "# custom\n");
+  });
+
+  test("--apply updates the lock file for files it writes", () => {
+    const cwd = mkTempDir("kyos-apply-lock-");
+    runBootstrap({ cwd, apply: false });
+
+    const specPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    fs.rmSync(specPath);
+
+    const lockBefore = JSON.parse(fs.readFileSync(path.join(cwd, ".kyos", "lock.json"), "utf8"));
+    const specKey = ".kyos/claude/commands/spec.md";
+    delete lockBefore.files[specKey];
+    fs.writeFileSync(path.join(cwd, ".kyos", "lock.json"), JSON.stringify(lockBefore), "utf8");
+
+    runApply({ cwd });
+
+    const lockAfter = JSON.parse(fs.readFileSync(path.join(cwd, ".kyos", "lock.json"), "utf8"));
+    assert.ok(lockAfter.files[specKey], "lock should have an entry for the created file");
+    assert.ok(lockAfter.files[specKey].checksum, "lock entry should have a checksum");
+  });
+
+  test("analysis warning mentions --apply when safe creates exist", () => {
+    const cwd = mkTempDir("kyos-apply-warning-");
+    runBootstrap({ cwd, apply: false });
+
+    fs.rmSync(path.join(cwd, ".kyos", "claude", "commands", "spec.md"));
+
+    const result = runBootstrap({ cwd, apply: false });
+    assert.equal(result.ok, true);
+    assert.ok(result.warnings.some((w) => String(w).includes("--apply")));
+    assert.ok(result.warnings.some((w) => String(w).includes("--force")));
+  });
+
   test("refuses to write through a symlink/junction parent (when supported)", (t) => {
     const cwd = mkTempDir("kyos-symlink-");
     const outside = mkTempDir("kyos-outside-");
@@ -253,5 +336,75 @@ module.exports = function register(test) {
     assert.throws(() => runBootstrap({ cwd, apply: false }), /symlink|junction|outside repo root/i);
     assert.equal(exists(outside, "commands/README.md"), false);
     assert.equal(exists(outside, "settings.json"), false);
+  });
+
+  test("conflict detected when a managed file has been locally edited", () => {
+    const cwd = mkTempDir("kyos-conflict-");
+    runBootstrap({ cwd, apply: false });
+
+    const managedSpecPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    fs.writeFileSync(managedSpecPath, "# custom edit\n", "utf8");
+
+    const result = runBootstrap({ cwd, apply: false });
+    assert.equal(result.ok, true);
+    assert.ok(result.summary.includes("1 managed conflicts"), `expected conflict in summary: ${result.summary}`);
+    assert.ok(result.lines.some((line) => String(line).includes("spec.md") && String(line).includes("local changes")));
+  });
+
+  test("blocked detected when an unmanaged file occupies a managed path", () => {
+    const cwd = mkTempDir("kyos-blocked-");
+    runBootstrap({ cwd, apply: false });
+
+    const lockPath = path.join(cwd, ".kyos", "lock.json");
+    const lock = JSON.parse(fs.readFileSync(lockPath, "utf8"));
+    const managedKey = ".kyos/claude/commands/spec.md";
+    delete lock.files[managedKey];
+    fs.writeFileSync(lockPath, JSON.stringify(lock), "utf8");
+
+    const specPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    fs.writeFileSync(specPath, "# unmanaged content\n", "utf8");
+
+    const result = runBootstrap({ cwd, apply: false });
+    assert.equal(result.ok, true);
+    assert.ok(result.summary.includes("1 unmanaged blockers"), `expected blocker in summary: ${result.summary}`);
+    assert.ok(result.lines.some((line) => String(line).includes("spec.md")));
+  });
+
+  test("add agent creates a local stub and records in config", () => {
+    const cwd = mkTempDir("kyos-add-agent-");
+    runBootstrap({ cwd, apply: false });
+
+    const result = addCapability({ cwd, type: "agent", name: "triage" });
+    assert.equal(result.ok, true);
+    assert.ok(exists(cwd, ".claude/agents/triage.md"));
+
+    const config = JSON.parse(fs.readFileSync(path.join(cwd, ".kyos", "config.json"), "utf8"));
+    assert.ok((config.installed.agents || []).includes("triage"));
+  });
+
+  test("add mcp writes to .mcp.json and records in config", () => {
+    const cwd = mkTempDir("kyos-add-mcp-");
+    runBootstrap({ cwd, apply: false });
+
+    const result = addCapability({ cwd, type: "mcp", name: "context7" });
+    assert.equal(result.ok, true);
+
+    const mcpConfig = JSON.parse(fs.readFileSync(path.join(cwd, ".mcp.json"), "utf8"));
+    assert.ok(mcpConfig.mcpServers && mcpConfig.mcpServers.context7, "context7 entry should exist in mcpServers");
+    assert.equal(mcpConfig.mcpServers.context7.url, "https://mcp.context7.com/mcp");
+
+    const config = JSON.parse(fs.readFileSync(path.join(cwd, ".kyos", "config.json"), "utf8"));
+    assert.ok((config.installed.mcps || []).includes("context7"));
+  });
+
+  test("add skill records capability in config.json", () => {
+    const cwd = mkTempDir("kyos-add-skill-config-");
+    runBootstrap({ cwd, apply: false });
+
+    const result = addCapability({ cwd, type: "skill", name: "path-safety" });
+    assert.equal(result.ok, true);
+
+    const config = JSON.parse(fs.readFileSync(path.join(cwd, ".kyos", "config.json"), "utf8"));
+    assert.ok((config.installed.skills || []).includes("path-safety"));
   });
 };
