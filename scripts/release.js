@@ -16,7 +16,8 @@ function die(msg) {
 }
 
 function run(cmd, opts = {}) {
-  return execSync(cmd, { cwd: ROOT, encoding: "utf8", ...opts }).trim();
+  const result = execSync(cmd, { cwd: ROOT, encoding: "utf8", ...opts });
+  return result ? result.trim() : "";
 }
 
 function bumpVersion(current, type) {
