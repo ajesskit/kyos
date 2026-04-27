@@ -9,6 +9,7 @@ const BUMP_TYPES = ["patch", "minor", "major"];
 const ROOT = path.resolve(__dirname, "..");
 const PACKAGE_JSON = path.join(ROOT, "package.json");
 const REGISTRY_JSON = path.join(ROOT, "catalog", "registry.json");
+const CHANGELOG_MD = path.join(ROOT, "CHANGELOG.md");
 
 function die(msg) {
   console.error(`error: ${msg}`);
@@ -47,11 +48,20 @@ const nextVersion = bumpVersion(pkg.version, bumpType);
 const tag = `v${nextVersion}`;
 const commitMsg = `chore: release ${tag}`;
 
-// 3. Plan summary
+// 3. Collect commits since last tag for CHANGELOG
+const lastTag = (() => {
+  try { return run("git describe --tags --abbrev=0"); } catch { return null; }
+})();
+const logRange = lastTag ? `${lastTag}..HEAD` : "HEAD";
+const rawLog = run(`git log ${logRange} --pretty=format:"- %s" --no-merges`);
+const changeLines = rawLog || "- minor improvements";
+
+// 3b. Plan summary
 console.log(`  bump:   ${pkg.version} → ${nextVersion} (${bumpType})`);
 console.log(`  commit: ${commitMsg}`);
 console.log(`  tag:    ${tag}`);
-console.log(`  files:  package.json, catalog/registry.json`);
+console.log(`  files:  package.json, catalog/registry.json, CHANGELOG.md`);
+console.log(`  changes since ${lastTag || "beginning"}:\n${changeLines}`);
 
 if (dryRun) {
   console.log("\n  dry-run — no files changed.");
@@ -67,6 +77,21 @@ const registry = JSON.parse(fs.readFileSync(REGISTRY_JSON, "utf8"));
 registry.modules["claude-base"].version = nextVersion;
 fs.writeFileSync(REGISTRY_JSON, JSON.stringify(registry, null, 2) + "\n", "utf8");
 
+// 5b. Prepend new entry to CHANGELOG.md
+const today = new Date().toISOString().slice(0, 10);
+const newEntry = `## [${nextVersion}] - ${today}\n### Changed\n${changeLines}\n\n`;
+const existing = fs.existsSync(CHANGELOG_MD) ? fs.readFileSync(CHANGELOG_MD, "utf8") : "";
+const insertAt = existing.indexOf("\n## ");
+const updated =
+  insertAt === -1
+    ? existing + newEntry
+    : existing.slice(0, insertAt + 1) + newEntry + existing.slice(insertAt + 1);
+fs.writeFileSync(CHANGELOG_MD, updated, "utf8");
+
+// 5c. Regenerate lockfile so it stays in sync with the new version
+console.log("\nregenerating lockfile...");
+run("npm install --package-lock-only", { stdio: "inherit" });
+
 // 6. Run tests
 console.log("\nrunning tests...");
 try {
@@ -78,7 +103,8 @@ try {
 }
 
 // 7. Commit and tag
-run(`git add "${PACKAGE_JSON}" "${REGISTRY_JSON}"`);
+const LOCK_JSON = path.join(ROOT, "package-lock.json");
+run(`git add "${PACKAGE_JSON}" "${REGISTRY_JSON}" "${LOCK_JSON}" "${CHANGELOG_MD}"`);
 run(`git commit -m "${commitMsg}"`);
 run(`git tag ${tag}`);
 

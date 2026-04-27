@@ -3,7 +3,6 @@ const path = require("path");
 const {
   CATALOG_DIR,
   CLAUDE_MD_FILE,
-  CLAUDE_ROOT,
   FRAMEWORK_PACKAGE,
   FRAMEWORK_VERSION,
   LOCK_FILE,
@@ -19,7 +18,6 @@ const {
   readTextIfExists,
   resolveRepoPath,
   writeRepoTextFile,
-  writeTextFile,
 } = require("./fs");
 const { sha256 } = require("./hash");
 const { stableStringify } = require("./json");

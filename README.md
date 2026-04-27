@@ -189,3 +189,13 @@ foreach ($repo in $repos) {
   Pop-Location
 }
 ```
+
+## Security
+
+- **Zero runtime dependencies** — no third-party code runs when you install or use `kyos-cli`.
+- **No install scripts** — `package.json` declares no `preinstall`, `postinstall`, or `install` hooks. Nothing executes at install time.
+- **Publish provenance** — every release is published with [npm provenance attestation](https://docs.npmjs.com/generating-provenance-statements) via GitHub Actions, so the build source is cryptographically verifiable.
+- **Lockfile committed** — `package-lock.json` is committed and regenerated on every release to prevent dependency drift.
+- **Path traversal protection** — all file I/O is validated in `src/core/fs.js`: relative paths only, no `..` segments, no symlinks escaping the repo root.
+
+To report a vulnerability, see [SECURITY.md](./SECURITY.md).
