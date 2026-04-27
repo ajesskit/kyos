@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.3.4] - 2026-04-27
+### Changed
+- fix: move /kyos:release command to repo-local .claude — not a catalog export
+
 ## [0.3.3] - 2026-04-27
 ### Changed
 - feat: add /kyos:release command for full branch-based release workflow

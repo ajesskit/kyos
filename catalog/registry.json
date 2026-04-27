@@ -2,7 +2,7 @@
   "modules": {
     "claude-base": {
       "description": "Shared Claude Code baseline structure and conventions for every repository.",
-      "version": "0.3.3"
+      "version": "0.3.4"
     }
   },
   "baseline": {
