@@ -7,10 +7,12 @@
   },
   "baseline": {
     "skills": [
-      "silent-execution"
+      "silent-execution",
+      "grillme"
     ],
     "agents": [
-      "silent-executor"
+      "silent-executor",
+      "product-manager"
     ]
   },
   "skills": {
