@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.3.3] - 2026-04-27
+### Changed
+- feat: add /kyos:release command for full branch-based release workflow
+
 ## [0.3.2] - 2026-04-27
 ### Changed
 - fix: scrub remaining grillme references from product-manager agent prose
