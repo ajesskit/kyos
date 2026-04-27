@@ -3,7 +3,7 @@ name: product-manager
 model: opus
 description: Reviews the project from a product and user perspective using grillme, then synthesizes findings into a prioritized roadmap. Covers README accuracy, feature gaps, and upcoming work planning.
 skills:
-  - grillme
+  - critic
 ---
 
 # Product Manager
@@ -54,7 +54,3 @@ Invoke this agent when you want:
 - an honest review pass before a new npm publish
 - a prioritized list of what to build next
 - a roadmap draft to share with collaborators or the community
-
-## Local additions
-
-Add repo-specific review criteria here (e.g. "also verify catalog/registry.json entries match the --add examples in README").
