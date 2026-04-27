@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.3.1] - 2026-04-27
+### Changed
+- feat: replace grillme skill with critic in baseline catalog
+
 ## [0.3.0] - 2026-04-27
 ### Changed
 - feat: add product-manager agent and grillme skill to baseline catalog
