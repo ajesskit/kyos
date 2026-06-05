@@ -1,4 +1,5 @@
 {
+  "version": "1.0.2",
   "modules": {
     "claude-base": {
       "description": "Shared Claude Code baseline structure and conventions for every repository.",
