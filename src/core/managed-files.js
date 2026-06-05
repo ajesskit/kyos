@@ -101,7 +101,7 @@ function loadLock(cwd) {
 
 function planManagedChanges({ cwd, desiredFiles, currentLock }) {
   const results = [];
-  const finalLockFiles = { ...(currentLock.files || {}) };
+  const finalLockFiles = {};
 
   for (const [relativePath, desiredContent] of Object.entries(desiredFiles)) {
     if (relativePath === LOCK_FILE) {
