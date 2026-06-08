@@ -1,4 +1,4 @@
-# /kyos:tasks
+# /tasks
 
 > Break the current technical plan into concrete, ordered work slices that can be executed and checked without losing the bigger picture.
 
@@ -41,9 +41,9 @@ Derive the slug from the argument if provided; otherwise glob `docs/execution/*/
 ## Example prompts
 
 ```text
-/kyos:tasks
-/kyos:tasks split the OAuth feature into execution slices
-/kyos:tasks turn the CSV import tech plan into ordered implementation work
+/tasks
+/tasks split the OAuth feature into execution slices
+/tasks turn the CSV import tech plan into ordered implementation work
 ```
 
 ## Before writing tasks
@@ -86,14 +86,14 @@ If the repo does not appear to have a working test harness yet, Claude should:
 Run `/clear` to drop accumulated context, then kick off implementation with the saved tasks file:
 
 ```text
-/kyos:implement @docs/execution/<spec-slug>/tasks.md
+/implement @docs/execution/<spec-slug>/tasks.md
 ```
 
 This gives the implementation run the full context window and a direct reference to the task list.
 
 ## Related section format
 
-See [`/kyos:spec`](./spec.md#related-section-format) for the canonical **Related** section shape. Follow the same format: a `## Related` block at the bottom with markdown links to sibling artefacts that exist. When updating a sibling, insert only the missing link — do not duplicate.
+See [`/spec`](./spec.md#related-section-format) for the canonical **Related** section shape. Follow the same format: a `## Related` block at the bottom with markdown links to sibling artefacts that exist. When updating a sibling, insert only the missing link — do not duplicate.
 
 ## Where to save the result
 
@@ -101,4 +101,4 @@ Write the execution slices into a repo-owned markdown file so it can be reviewed
 
 - `docs/execution/<spec-slug>/tasks.md`
 
-Use the same `<spec-slug>` chosen in `/kyos:spec` (the folder created under `docs/execution/`).
+Use the same `<spec-slug>` chosen in `/spec` (the folder created under `docs/execution/`).

@@ -13,6 +13,7 @@ const {
 } = require("./constants");
 const {
   addInstalledCapability,
+  ensureBaseHooks,
   loadMcpConfig,
   loadUserConfig,
   saveMcpConfig,
@@ -234,6 +235,7 @@ function runBootstrap({ cwd, apply, force }) {
   if (!hasExistingClaudeSetup) {
     applyManagedChanges({ cwd, plan });
     applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
+    ensureBaseHooks(cwd);
     ensureGitignoreHasKyos({ cwd });
   }
 
@@ -806,6 +808,7 @@ function runApply({ cwd }) {
 
   applyManagedChanges({ cwd, plan: { results: createOnlyResults, finalLockFiles: createOnlyLockFiles } });
   applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
+  ensureBaseHooks(cwd);
   const installedLines = replayInstalledCapabilities({ cwd, config });
   ensureGitignoreHasKyos({ cwd });
 

@@ -1,4 +1,4 @@
-# /kyos:implement
+# /implement
 
 > Move the feature forward in small verified slices, using the available specialists and repo context without losing the plan.
 
@@ -43,9 +43,9 @@ Derive the slug from the argument if provided; otherwise glob `docs/execution/*/
 
 ## Task completion tracking
 
-If the user provides a task file (typically the output of `/kyos:tasks`, e.g. `docs/execution/<spec-slug>/tasks.md`), treat it as the source of truth for progress.
+If the user provides a task file (typically the output of `/tasks`, e.g. `docs/execution/<spec-slug>/tasks.md`), treat it as the source of truth for progress.
 
-During `/kyos:implement`, Claude should:
+During `/implement`, Claude should:
 
 1. Read the task file first and choose the next not-yet-done slice from it.
 2. After completing a slice, update the same task file to reflect completion:
@@ -65,11 +65,11 @@ If the task file exposes multiple ready slices that can be done independently, p
 ## Example prompts
 
 ```text
-/kyos:implement
-/kyos:implement finish the current feature
-/kyos:implement handle only the auth callback and session persistence slice
-/kyos:implement use docs/execution/oauth-login/tasks.md and complete the next slice
-/kyos:implement use docs/execution/oauth-login/tasks.md and run the next two independent slices in parallel
+/implement
+/implement finish the current feature
+/implement handle only the auth callback and session persistence slice
+/implement use docs/execution/oauth-login/tasks.md and complete the next slice
+/implement use docs/execution/oauth-login/tasks.md and run the next two independent slices in parallel
 ```
 
 ## Claude behavior
@@ -85,4 +85,4 @@ When using this command, Claude should:
 
 ## Next in flow
 
-Continue with [`/kyos:verify`](./verify.md) once the implementation slice is ready to be checked.
+Continue with [`/verify`](./verify.md) once the implementation slice is ready to be checked.

@@ -1,4 +1,4 @@
-# /kyos:hire
+# /hire
 
 > Stock the repo with the support it is missing before the next feature run trips over the same obvious gaps.
 
@@ -52,9 +52,9 @@ Work in this order:
 ## Example prompts
 
 ```text
-/kyos:hire
-/kyos:hire prepare this repo for oauth, redis, and github actions
-/kyos:hire we are introducing background jobs and object storage next
+/hire
+/hire prepare this repo for oauth, redis, and github actions
+/hire we are introducing background jobs and object storage next
 ```
 
 ## What Claude should return
@@ -69,4 +69,4 @@ The result should read like a field report:
 
 ## Hand-off
 
-Once the repo support layer is in better shape, continue with `/kyos:spec`, `/kyos:tech`, or `/kyos:implement`.
+Once the repo support layer is in better shape, continue with `/spec`, `/tech`, or `/implement`.

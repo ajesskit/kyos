@@ -1,6 +1,6 @@
 # Kyos Commands (Managed)
 
-This folder is the framework-managed source for the built-in `/kyos:*` workflow commands.
+This folder is the framework-managed source for the built-in `/*` workflow commands.
 
 In a bootstrapped repo:
 
@@ -9,9 +9,9 @@ In a bootstrapped repo:
 
 Recommended daily flow:
 
-`/kyos:spec -> /kyos:tech -> /kyos:tasks -> /kyos:implement -> /kyos:verify`
+`/spec -> /tech -> /tasks -> /implement -> /verify`
 
 If you’re new to the repo or about to run tooling/scripts, start with:
 
-`/kyos:prevalidate`
+`/prevalidate`
 

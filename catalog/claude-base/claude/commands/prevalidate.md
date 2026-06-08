@@ -1,4 +1,4 @@
-# /kyos:prevalidate
+# /prevalidate
 
 Run a quick, **read-only** safety + security prevalidation before doing any work in a repo (especially before running installers, tests, or scripts).
 

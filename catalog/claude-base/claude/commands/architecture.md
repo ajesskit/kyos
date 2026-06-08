@@ -1,4 +1,4 @@
-# /kyos:architecture
+# /architecture
 
 > Pin down the technical shape of the repo so later planning is built on decisions instead of vibes.
 
@@ -64,9 +64,9 @@ Claude should push toward concrete answers in areas like:
 ## Example prompts
 
 ```text
-/kyos:architecture
-/kyos:architecture choose a backend and deployment model for a small SaaS
-/kyos:architecture split this repo into app, worker, and shared data responsibilities
+/architecture
+/architecture choose a backend and deployment model for a small SaaS
+/architecture split this repo into app, worker, and shared data responsibilities
 ```
 
 ## What a good response looks like
@@ -78,7 +78,7 @@ A good result should leave a reader able to answer:
 - where the risky edges are
 - what support is missing around that stack
 
-If new stack areas appear that the repo is not equipped for, point to `/kyos:hire`.
+If new stack areas appear that the repo is not equipped for, point to `/hire`.
 
 ## Where to save the result (so it can be committed)
 
