@@ -51,10 +51,10 @@ Changes to managed files are planned (create/update/conflict/blocked) before bei
 Located in `catalog/claude-base/claude/commands/` (managed copies) and `.claude/commands/` (repo wrappers). Recommended delivery chain:
 
 ```
-/kyos:spec → /kyos:tech → /kyos:tasks → /kyos:implement → /kyos:verify
+/spec → /tech → /tasks → /implement → /verify
 ```
 
-Supporting commands: `/kyos:prevalidate`, `/kyos:architecture`, `/kyos:hire`.
+Supporting commands: `/prevalidate`, `/architecture`, `/hire`.
 
 ### Catalog (`catalog/registry.json`)
 

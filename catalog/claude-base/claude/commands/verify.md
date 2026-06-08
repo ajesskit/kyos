@@ -1,4 +1,4 @@
-# /kyos:verify
+# /verify
 
 > Check that implemented work matches the spec, still fits the plan, and leaves the repo in a trustworthy state.
 
@@ -41,9 +41,9 @@ Derive the slug from the argument if provided; otherwise glob `docs/execution/*/
 ## Example prompts
 
 ```text
-/kyos:verify
-/kyos:verify check the OAuth implementation against the spec and tech plan
-/kyos:verify review the completed CSV import slices for regressions and missing tests
+/verify
+/verify check the OAuth implementation against the spec and tech plan
+/verify review the completed CSV import slices for regressions and missing tests
 ```
 
 ## What Claude should return
@@ -57,12 +57,12 @@ The result should make it easy to decide what happens next:
 
 ## Next in flow
 
-If verification fails, go back to [`/kyos:implement`](./implement.md).
+If verification fails, go back to [`/implement`](./implement.md).
 
 If verification passes:
 
 - tell the user the feature spec is now completed
 - suggest deleting the finished spec note if it was only a temporary working artifact
 - keep it only if the team wants a durable product or decision record
-- then start the next feature cycle at [`/kyos:spec`](./spec.md)
+- then start the next feature cycle at [`/spec`](./spec.md)
 

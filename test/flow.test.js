@@ -4,6 +4,7 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { runApply, runBootstrap, runDoctor, runUpdateKyos, addCapability } = require("../src/core/workflows");
+const { ensureBaseHooks } = require("../src/core/config");
 
 function mkTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -69,6 +70,102 @@ module.exports = function register(test) {
     const gitignore = fs.readFileSync(path.join(cwd, ".gitignore"), "utf8");
     assert.ok(gitignore.includes("node_modules/"));
     assert.ok(gitignore.includes(".kyos/claude/"));
+  });
+
+  test("bootstrap seeds settings.json with PostToolUse Agent hook", () => {
+    const cwd = mkTempDir("kyos-settings-hooks-");
+    runBootstrap({ cwd, apply: false });
+
+    const settings = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    assert.ok(Array.isArray(settings.hooks?.PostToolUse), "hooks.PostToolUse must be an array");
+    const agentMatcher = settings.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    assert.ok(agentMatcher, "must have a PostToolUse entry with matcher 'Agent'");
+    assert.ok(Array.isArray(agentMatcher.hooks) && agentMatcher.hooks.length > 0, "Agent matcher must have hooks");
+    assert.equal(agentMatcher.hooks[0].type, "command");
+  });
+
+  test("bootstrap (analysis mode) does not touch settings.json when Claude setup already exists", () => {
+    const cwd = mkTempDir("kyos-settings-no-overwrite-");
+    const settingsPath = path.join(cwd, ".claude");
+    fs.mkdirSync(settingsPath, { recursive: true });
+    // plant enough structure so detectExistingClaudeSetup returns true
+    fs.mkdirSync(path.join(cwd, ".kyos"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".kyos", "config.json"), JSON.stringify({}), "utf8");
+    const existing = {
+      permissions: { defaultMode: "allow" },
+      hooks: { PostToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "echo done" }] }] },
+    };
+    const before = JSON.stringify(existing);
+    fs.writeFileSync(path.join(settingsPath, "settings.json"), before, "utf8");
+
+    runBootstrap({ cwd, apply: false });
+
+    const after = fs.readFileSync(path.join(settingsPath, "settings.json"), "utf8");
+    assert.equal(after, before, "settings.json must be byte-for-byte unchanged in analysis mode");
+  });
+
+  test("--apply merges base Agent hook into existing settings.json, preserving other hooks", () => {
+    const cwd = mkTempDir("kyos-apply-merge-hooks-");
+    runBootstrap({ cwd, apply: false });
+
+    // Simulate a user who already has their own PostToolUse hook (no Agent entry yet)
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const existing = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    existing.hooks = { PostToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "echo done" }] }] };
+    fs.writeFileSync(settingsPath, JSON.stringify(existing), "utf8");
+
+    runApply({ cwd });
+
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    assert.equal(settings.permissions.defaultMode, "ask", "original permissions must be preserved");
+    const postToolUse = settings.hooks.PostToolUse;
+    assert.ok(postToolUse.some((h) => h.matcher === "Bash"), "user's Bash hook must be preserved");
+    assert.ok(postToolUse.some((h) => h.matcher === "Agent"), "Agent hook must be merged in");
+  });
+
+  test("--apply does not duplicate the Agent hook when already present", () => {
+    const cwd = mkTempDir("kyos-apply-hooks-idempotent-");
+    runBootstrap({ cwd, apply: false });
+
+    runApply({ cwd });
+    runApply({ cwd });
+
+    const settings = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    const agentHooks = settings.hooks.PostToolUse.filter((h) => h.matcher === "Agent");
+    assert.equal(agentHooks.length, 1, "Agent hook must appear exactly once after multiple applies");
+  });
+
+  test("ensureBaseHooks appends Agent hook alongside existing user hooks without removing them", () => {
+    const cwd = mkTempDir("kyos-ensure-hooks-merge-");
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    const userHook = { matcher: "Bash", hooks: [{ type: "command", command: "echo hi" }] };
+    const initial = { permissions: { defaultMode: "allow" }, hooks: { PostToolUse: [userHook] } };
+    fs.writeFileSync(path.join(cwd, ".claude", "settings.json"), JSON.stringify(initial), "utf8");
+
+    const changed = ensureBaseHooks(cwd);
+
+    assert.equal(changed, true, "should report a change was made");
+    const settings = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    assert.equal(settings.permissions.defaultMode, "allow", "other top-level keys must be preserved");
+    const postToolUse = settings.hooks.PostToolUse;
+    assert.equal(postToolUse.length, 2, "both hooks must be present");
+    assert.ok(postToolUse.some((h) => h.matcher === "Bash"), "user Bash hook must be preserved");
+    assert.ok(postToolUse.some((h) => h.matcher === "Agent"), "Agent hook must be added");
+  });
+
+  test("ensureBaseHooks is idempotent when Agent hook is already present", () => {
+    const cwd = mkTempDir("kyos-ensure-hooks-noop-");
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    const agentHook = { matcher: "Agent", hooks: [{ type: "command", command: "echo existing" }] };
+    const initial = { hooks: { PostToolUse: [agentHook] } };
+    const before = JSON.stringify(initial);
+    fs.writeFileSync(path.join(cwd, ".claude", "settings.json"), before, "utf8");
+
+    const changed = ensureBaseHooks(cwd);
+
+    assert.equal(changed, false, "should report no change was made");
+    const after = fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8");
+    assert.equal(after, before, "file must be byte-for-byte unchanged");
   });
 
   test("bootstrap creates .gitignore with .kyos/claude/ when missing", () => {

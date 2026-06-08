@@ -1,4 +1,4 @@
-# /kyos:tech
+# /tech
 
 > Turn feature behavior into a build plan: moving parts, interfaces, data flow, failure modes, and implementation boundaries.
 
@@ -10,7 +10,7 @@ Typical outcomes:
 
 - a technical plan for the target feature
 - proposed interfaces, data structures, file boundaries, and operational considerations
-- a note about new stack requirements that may need `/kyos:hire`
+- a note about new stack requirements that may need `/hire`
 
 ## Inputs
 
@@ -36,9 +36,9 @@ Typical outcomes:
 ## Example prompts
 
 ```text
-/kyos:tech
-/kyos:tech use GitHub OAuth with secure session cookies and Redis session storage
-/kyos:tech plan CSV import with validation pipeline, staging table, and background processing
+/tech
+/tech use GitHub OAuth with secure session cookies and Redis session storage
+/tech plan CSV import with validation pipeline, staging table, and background processing
 ```
 
 ## Claude behavior
@@ -49,7 +49,7 @@ When using this command, Claude should:
 2. Draft a specific implementation approach.
 3. Make assumptions visible and reviewable.
 4. Point out risk, migration, or operational concerns.
-5. Suggest `/kyos:hire` if the design introduces uncovered capabilities.
+5. Suggest `/hire` if the design introduces uncovered capabilities.
 6. Include a **Related** section in tech.md with a link to `spec.md` (required) and to `tasks.md` if it already exists.
 7. After saving tech.md, open `spec.md` in the same execution folder and add or update a link to `tech.md` in its **Related** section (create the section if absent).
 
@@ -59,11 +59,11 @@ When using this command, Claude should:
 
 If the context meter is at 50% or more, run `/compact` before continuing — the plan is saved to disk so nothing is lost.
 
-Continue with [`/kyos:tasks`](./tasks.md) to break the plan into ordered execution slices.
+Continue with [`/tasks`](./tasks.md) to break the plan into ordered execution slices.
 
 ## Related section format
 
-See [`/kyos:spec`](./spec.md#related-section-format) for the canonical **Related** section shape. Follow the same format: a `## Related` block at the bottom with markdown links to sibling artefacts that exist. When updating a sibling, insert only the missing link — do not duplicate.
+See [`/spec`](./spec.md#related-section-format) for the canonical **Related** section shape. Follow the same format: a `## Related` block at the bottom with markdown links to sibling artefacts that exist. When updating a sibling, insert only the missing link — do not duplicate.
 
 ## Where to save the result
 
@@ -71,4 +71,4 @@ Write the technical plan into a repo-owned markdown file so it can be reviewed a
 
 - `docs/execution/<spec-slug>/tech.md`
 
-Use the same `<spec-slug>` chosen in `/kyos:spec` (the folder created under `docs/execution/`).
+Use the same `<spec-slug>` chosen in `/spec` (the folder created under `docs/execution/`).

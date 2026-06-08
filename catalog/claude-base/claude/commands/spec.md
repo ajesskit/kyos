@@ -1,4 +1,4 @@
-# /kyos:spec
+# /spec
 
 > Capture a feature in user language before discussing tables, endpoints, or framework details.
 
@@ -10,7 +10,7 @@ Typical outcomes:
 
 - a single-feature planning note
 - user-facing requirements
-- acceptance criteria
+- user-observable outcomes
 - clearly marked unanswered questions
 
 This is a working artifact, not permanent repo documentation. Once the feature is implemented and verified, the completed spec can be removed unless the team explicitly wants to keep it.
@@ -21,15 +21,17 @@ This is a working artifact, not permanent repo documentation. Once the feature i
 - `CLAUDE.md`
 - `.claude/commands/project-context.md`
 - any nearby product or design notes
+- user persona or role (inferred from context; only prompted if none is discernible)
 
 ## Workflow
 
 1. Pick one feature or slice of work.
 2. Gather what is already known.
-3. Write the behavior from the user's point of view.
-4. Push on ambiguity with concrete follow-up questions.
-5. Mark unresolved parts plainly instead of inventing certainty.
-6. Translate the result into testable acceptance criteria.
+3. Identify the user role from context; prompt once only if no actor is discernible.
+4. Write the behavior from the user's point of view, opening with a user story: *As a [role], I want [capability], so that [outcome].*
+5. Push on ambiguity with concrete follow-up questions.
+6. Mark unresolved parts plainly instead of inventing certainty.
+7. Translate the result into user-observable outcomes.
 
 ## Guardrails
 
@@ -40,9 +42,9 @@ This is a working artifact, not permanent repo documentation. Once the feature i
 ## Example prompts
 
 ```text
-/kyos:spec
-/kyos:spec add GitHub OAuth sign-in
-/kyos:spec let users upload CSV files and preview validation errors before import
+/spec
+/spec add GitHub OAuth sign-in
+/spec let users upload CSV files and preview validation errors before import
 ```
 
 ## Claude behavior
@@ -51,7 +53,7 @@ When using this command, Claude should:
 
 1. Restate the feature in plain language.
 2. Ask for any missing user-facing detail.
-3. Draft a concise but specific functional spec.
+3. Draft a concise but specific functional spec, opening with a user story (*As a [role], I want [capability], so that [outcome].*). Infer the role from context; ask only if it cannot be determined.
 4. Mark unresolved questions explicitly.
 5. Save the result into a local planning note.
 6. After saving, check whether `tech.md` or `tasks.md` already exist in the same execution folder. If either exists, append a **Related** section to spec.md with links to the existing sibling artefacts.
@@ -62,7 +64,7 @@ When using this command, Claude should:
 
 If the context meter is at 50% or more, run `/compact` before continuing — the spec is saved to disk so nothing is lost.
 
-Continue with [`/kyos:tech`](./tech.md) to turn the feature behavior into an engineering approach.
+Continue with [`/tech`](./tech.md) to turn the feature behavior into an engineering approach.
 
 ## Related section format
 
@@ -87,4 +89,4 @@ Create a dedicated execution folder for this spec, then write the spec into a re
 3. Write the spec to:
    - `docs/execution/<spec-slug>/spec.md`
 
-If the spec is purely a temporary working artifact, it can be deleted after `/kyos:verify`—but default to committing it while work is in flight.
+If the spec is purely a temporary working artifact, it can be deleted after `/verify`—but default to committing it while work is in flight.
