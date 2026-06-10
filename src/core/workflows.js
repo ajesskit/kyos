@@ -206,7 +206,7 @@ function runBootstrap({ cwd, apply, force }) {
     return {
       ok: false,
       summary: "apply disabled",
-      errors: ["The '--apply' command is temporarily disabled pending revalidation."],
+      errors: ["The 'kyos-cli --apply' command is temporarily disabled pending revalidation."],
     };
   }
   if (force) {
@@ -330,10 +330,6 @@ function planLocalClaudeSeed({ cwd }) {
     [`${CLAUDE_ROOT}/settings.json`]: stableStringify({
       permissions: {
         defaultMode: "ask",
-      },
-      statusLine: {
-        showBranch: true,
-        showDirty: true,
       },
     }),
     [`${CLAUDE_ROOT}/commands/README.md`]:
