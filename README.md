@@ -5,6 +5,7 @@
 [![npm downloads](https://img.shields.io/npm/dt/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![License](https://img.shields.io/npm/l/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![Node version](https://img.shields.io/node/v/kyos-cli)](https://nodejs.org)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ajesskit-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ajesskit)
 
 Claude Code works best with structure — without it, conversations drift, context gets lost, and results get inconsistent. `kyos-cli` installs a set of workflow commands into your project so you can move from idea to working code in a repeatable way. One command sets it up; the rest is up to you and Claude.
 
