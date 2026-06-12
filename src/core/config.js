@@ -59,9 +59,6 @@ function hookMarker(name) {
 const BASE_AGENT_HOOK_PAYLOAD =
   "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"PROCESS RULE: A subagent just completed. If the user now reports a bug or issue with its output, re-spawn the SAME agent type via the Agent tool — do NOT call Edit or Write inline. Only fix inline if it is a single-line typo or wiring mistake faster to correct than to brief an agent (per .claude/rules/process.md).\"}}' ";
 
-// Exact command written by pre-marker releases; recognized once for in-place migration.
-const LEGACY_BASE_AGENT_COMMAND = BASE_AGENT_HOOK_PAYLOAD;
-
 const BASE_AGENT_MARKER = hookMarker("base-agent");
 const BASE_AGENT_HOOK = {
   matcher: "Agent",
@@ -130,17 +127,6 @@ function ensureBaseHooks(cwd) {
   }
 
   const postToolUse = (existing.hooks && existing.hooks.PostToolUse) || [];
-  const isLegacy = (e) => Array.isArray(e.hooks) &&
-    e.hooks.some((h) => h.command === LEGACY_BASE_AGENT_COMMAND);
-  if (postToolUse.some(isLegacy)) {
-    const next = postToolUse.map((e) => (isLegacy(e) ? BASE_AGENT_HOOK : e));
-    writeRepoTextFile(cwd, MCP_CONFIG_FILE, stableStringify({
-      ...existing,
-      hooks: { ...(existing.hooks || {}), PostToolUse: next },
-    }));
-    return true;
-  }
-
   if (postToolUse.some((entry) => entry.matcher === "Agent")) {
     return false;
   }

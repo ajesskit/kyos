@@ -828,7 +828,7 @@ module.exports = function register(test) {
     assert.equal(after.entries.length, 1, "duplicated marked entries must be deduped to one");
   });
 
-  test("--apply migrates legacy absolute-path hook wiring in place", () => {
+  test("--apply leaves legacy unmarked hook wiring untouched and warns on unknown version", () => {
     const cwd = mkTempDir("kyos-hook-legacy-");
     runBootstrap({ cwd, apply: false });
     addCapability({ cwd, type: "hook", name: "repo-sandbox" });
@@ -842,14 +842,41 @@ module.exports = function register(test) {
     entries[0].hooks[0].command = legacyCommand;
     writeSettings(cwd, settings);
 
+    // Simulate an installation last written by a pre-stamp (unknown) version.
+    fs.rmSync(path.join(cwd, ".kyos", "version.json"));
+
     const result = runApply({ cwd });
 
     const after = getSandboxEntry(cwd);
-    assert.equal(after.entries.length, 1, "legacy entry must be replaced, not duplicated");
-    const afterCommand = after.entries[0].hooks[0].command;
-    assert.ok(afterCommand.includes("${CLAUDE_PROJECT_DIR}"), "replacement must be portable");
-    assert.ok(afterCommand.includes("managedBy=kyos/repo-sandbox"), "replacement must be marked");
-    assert.ok(result.lines.some((l) => String(l).includes("~ hook:repo-sandbox")), "must report the migration");
+    // The unmarked legacy entry is repo-owned now: kyos no longer migrates it. It is
+    // left untouched and a marked portable entry is appended beside it; the warning
+    // tells the user to review and remove the orphan.
+    assert.ok(
+      after.entries.some((e) => e.hooks[0].command === legacyCommand),
+      "legacy unmarked entry must be left untouched"
+    );
+    assert.ok(
+      after.entries.some((e) => e.hooks[0].command.includes("managedBy=kyos/repo-sandbox")),
+      "a marked portable entry must be present"
+    );
+    assert.ok(
+      (result.warnings || []).some((w) => /unknown kyos version/i.test(w) && /orphaned/i.test(w)),
+      "must warn to review hooks for orphaned entries"
+    );
+  });
+
+  test("--apply does not warn about unknown version when the stamp is current", () => {
+    const cwd = mkTempDir("kyos-hook-known-version-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    // runBootstrap stamped the current version, so this apply is a known upgrade.
+    const result = runApply({ cwd });
+
+    assert.ok(
+      !(result.warnings || []).some((w) => /unknown kyos version/i.test(w)),
+      "must not warn when the recorded version is known"
+    );
   });
 
   test("--apply leaves foreign same-matcher entries untouched", () => {
@@ -897,7 +924,7 @@ module.exports = function register(test) {
     assert.ok(repaired.hooks[0].command.includes("hookSpecificOutput"), "payload must be restored");
   });
 
-  test("ensureBaseHooks migrates the legacy unmarked Agent hook in place", () => {
+  test("ensureBaseHooks leaves an unmarked Agent hook untouched", () => {
     const cwd = mkTempDir("kyos-base-hook-legacy-");
     fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
     const legacyCommand =
@@ -909,14 +936,13 @@ module.exports = function register(test) {
 
     const changed = ensureBaseHooks(cwd);
 
-    assert.equal(changed, true, "legacy entry must be migrated");
+    // Unmarked entries are repo-owned: kyos no longer migrates them. The unknown-version
+    // warning (surfaced by --apply) is what prompts the user to clean up the orphan.
+    assert.equal(changed, false, "unmarked Agent entry must be left untouched");
     const after = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
     const agentEntries = after.hooks.PostToolUse.filter((h) => h.matcher === "Agent");
-    assert.equal(agentEntries.length, 1, "no duplicate Agent entry");
-    assert.ok(
-      agentEntries[0].hooks[0].command.includes("# managedBy=kyos/base-agent"),
-      "migrated entry must carry the marker"
-    );
+    assert.equal(agentEntries.length, 1, "no entry added or removed");
+    assert.equal(agentEntries[0].hooks[0].command, legacyCommand, "command must be unchanged");
   });
 
   test("version stamp is written on init and refreshed by --apply", () => {

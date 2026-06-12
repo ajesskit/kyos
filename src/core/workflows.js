@@ -6,7 +6,6 @@ const {
   CLAUDE_MD_FILE,
   CLAUDE_ROOT,
   CATALOG_DIR,
-  HOOK_MARKER_PREFIX,
   LOCK_FILE,
   MANAGED_ROOT,
   MCP_CONFIG_FILE,
@@ -31,6 +30,7 @@ const {
   findStaleManagedFiles,
   loadLock,
   planManagedChanges,
+  readVersionStamp,
   renderManagedFiles,
   writeVersionStamp,
 } = require("./managed-files");
@@ -837,28 +837,6 @@ function replayInstalledCapabilities({ cwd, config }) {
     const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
     const command = buildHookCommand(runtime, scriptRelativePath, name);
 
-    // One-generation migration: pre-marker releases wired an unmarked entry with
-    // an absolute script path. Same matcher + kyos script basename + no marker is
-    // unambiguously ours — remove it; the marked portable entry replaces it below.
-    const settings = readJsonIfExists(path.resolve(cwd, MCP_CONFIG_FILE)) || {};
-    const eventEntries = (settings.hooks && settings.hooks[capability.event]) || [];
-    const isLegacy = (e) => e.matcher === capability.matcher &&
-      Array.isArray(e.hooks) &&
-      e.hooks.some((h) =>
-        typeof h.command === "string" &&
-        h.command.includes(runtime.script) &&
-        !h.command.includes(HOOK_MARKER_PREFIX));
-    const hasLegacy = eventEntries.some(isLegacy);
-    if (hasLegacy) {
-      writeRepoTextFile(cwd, MCP_CONFIG_FILE, stableStringify({
-        ...settings,
-        hooks: {
-          ...(settings.hooks || {}),
-          [capability.event]: eventEntries.filter((e) => !isLegacy(e)),
-        },
-      }));
-    }
-
     const scriptMissing = !fs.existsSync(resolveRepoPath(cwd, scriptRelativePath));
     if (scriptMissing) {
       writeHookScript(cwd, name, runtime, scriptRelativePath);
@@ -870,7 +848,7 @@ function replayInstalledCapabilities({ cwd, config }) {
       marker: hookMarker(name),
     });
 
-    if (hasLegacy || wiring.action === "updated") {
+    if (wiring.action === "updated") {
       lines.push(`~ hook:${name} rewired (portable)`);
     } else if (scriptMissing || wiring.action === "added") {
       lines.push(`+ hook:${name}`);
@@ -907,6 +885,13 @@ function runApply({ cwd }) {
 
   const repoName = path.basename(cwd);
   const config = loadUserConfig(cwd, repoName);
+
+  // A pre-stamp release wrote no version.json. Detect that before writeVersionStamp
+  // overwrites it, so we can warn the user to audit hooks for orphaned entries that
+  // older kyos versions may have left behind (we no longer migrate them in place).
+  const priorStamp = readVersionStamp(cwd);
+  const fromUnknownVersion = !priorStamp || !priorStamp.version;
+
   const desiredFiles = renderManagedFiles({ cwd, config });
   const currentLock = loadLock(cwd);
   const plan = planManagedChanges({ cwd, desiredFiles, currentLock });
@@ -952,11 +937,23 @@ function runApply({ cwd }) {
     lines.push(`! ${stalePath} (managed previously but no longer part of the current base set)`);
   }
 
+  const warnings = [];
+  if (stale.length > 0) {
+    warnings.push("Stale managed files were detected. Review them before removing anything.");
+  }
+  if (fromUnknownVersion) {
+    warnings.push(
+      "This installation was last written by an unknown kyos version. Review the hooks " +
+      "in .claude/settings.json and remove any orphaned entries (e.g. stale or duplicate " +
+      "hook commands) that older versions may have left behind."
+    );
+  }
+
   return {
     ok: true,
     summary: `apply complete: ${created} created, ${skipped} skipped.`,
     lines,
-    warnings: stale.length > 0 ? ["Stale managed files were detected. Review them before removing anything."] : [],
+    warnings,
   };
 }
 

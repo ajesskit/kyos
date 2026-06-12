@@ -96,6 +96,13 @@ function writeVersionStamp(cwd, repoName) {
   }));
 }
 
+// Returns the recorded stamp, or null when none exists. A repo wired by a
+// pre-stamp release has no version.json, which is how callers recognize an
+// installation upgraded "from an unknown version".
+function readVersionStamp(cwd) {
+  return readJsonIfExists(resolveRepoPath(cwd, VERSION_FILE));
+}
+
 function loadLock(cwd) {
   const lockPath = resolveRepoPath(cwd, LOCK_FILE);
   return (
@@ -208,6 +215,7 @@ module.exports = {
   findStaleManagedFiles,
   loadLock,
   planManagedChanges,
+  readVersionStamp,
   renderManagedFiles,
   writeVersionStamp,
 };
