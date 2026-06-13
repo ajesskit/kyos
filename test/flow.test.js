@@ -1108,7 +1108,7 @@ module.exports = function register(test) {
     const doctor = runDoctor({ cwd });
     assert.equal(doctor.ok, true);
     assert.ok(
-      doctor.warnings.some((w) => /repo-sandbox/.test(w) && /kyos-cli@0\.0\.1/.test(w) && new RegExp(PKG_VERSION.replace(/\./g, "\\.")).test(w)),
+      doctor.warnings.some((w) => /repo-sandbox/.test(w) && /kyos-cli@0\.0\.1/.test(w) && w.includes(PKG_VERSION)),
       "must report stale version and the running version"
     );
     assert.equal(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"), before, "plain doctor must not write");
