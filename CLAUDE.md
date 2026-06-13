@@ -9,12 +9,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm test                        # Run integration tests (test/flow.test.js)
+npm test                        # Run integration tests (test/run.js → loads test/flow.test.js)
+npm run lint                    # ESLint over src/ and bin/
 npm start                       # Equivalent to: node ./bin/kyos.js --init
-node ./bin/kyos.js --init       # Bootstrap or analyze existing setup
-node ./bin/kyos.js --update     # Force-rewrite .kyos/ to current baseline
-node ./bin/kyos.js --add <type> <name>  # Add capability (skill/agent/mcp/hook)
+node ./bin/kyos.js --init       # Bootstrap, or analyze existing setup (read-only when .claude/ exists)
+node ./bin/kyos.js --apply      # Create-only: write missing managed files, never overwrite
+node ./bin/kyos.js --update     # Force-rewrite .kyos/ to current baseline (destructive to .kyos only)
+node ./bin/kyos.js --doctor [--fix]      # Report (or repair) managed-file drift
+node ./bin/kyos.js --add <type> <name>   # Add capability (skill/agent/mcp/hook)
 ```
+
+The test runner (`test/run.js`) is a custom TAP-style harness with no name filter — it runs the full suite. To run a single case, temporarily narrow the registrations in `test/flow.test.js`.
 
 ## Architecture
 
@@ -25,18 +30,21 @@ node ./bin/kyos.js --add <type> <name>  # Add capability (skill/agent/mcp/hook)
 
 Changes to managed files are planned (create/update/conflict/blocked) before being applied, so the framework never silently destroys local edits.
 
-### Core Module Map (`src/core/`)
+### Module Map
+
+`src/cli.js` is the entrypoint (`bin/kyos.js` just requires it): it parses flags and dispatches to `workflows.js`. Everything else lives in `src/core/`.
 
 | File | Role |
 |---|---|
-| `cli.js` | Argument parsing; routes to `workflows.js` |
-| `workflows.js` | All top-level operations: bootstrap, update, add-capability |
-| `managed-files.js` | Checksum-based diff/merge: `planManagedChanges()` → `applyManagedChanges()` |
-| `fs.js` | Safe filesystem I/O; validates all paths against traversal/symlink attacks |
-| `config.js` | Reads/writes `.kyos/config.json` and `.mcp.json` |
-| `catalog.js` | Loads `catalog/registry.json` and looks up skills/agents/MCPs |
-| `hash.js` | SHA256 hashing for integrity checks |
-| `constants.js` | All directory/file path constants |
+| `src/cli.js` | Argument parsing; routes to `workflows.js` (`runBootstrap`/`runApply`/`runUpdateKyos`/`runDoctor`/`addCapability`) |
+| `core/workflows.js` | All top-level operations: bootstrap, apply, update, doctor, add-capability, hook install |
+| `core/managed-files.js` | Checksum-based diff/merge: `planManagedChanges()` → `applyManagedChanges()` |
+| `core/fs.js` | Safe filesystem I/O; validates all paths against traversal/symlink attacks |
+| `core/config.js` | Reads/writes `.kyos/config.json` and `.mcp.json` |
+| `core/catalog.js` | Loads `catalog/registry.json` and looks up skills/agents/MCPs |
+| `core/json.js` | JSON read/write helpers |
+| `core/hash.js` | SHA256 hashing for integrity checks |
+| `core/constants.js` | All directory/file path constants |
 
 ### Bootstrap Flow (`workflows.js: runBootstrap`)
 

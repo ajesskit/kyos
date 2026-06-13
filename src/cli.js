@@ -19,7 +19,7 @@ Usage:
   kyos-cli --apply
   kyos-cli --update
   kyos-cli --add <skill|agent|mcp|hook> <name>
-  kyos-cli --doctor
+  kyos-cli --doctor [--fix]
 Notes:
   - Commands run against the current working directory only.
   - Use '--init' to install a base Claude structure when none exists yet.
@@ -28,7 +28,7 @@ Notes:
   - Use '--update' to forcibly rewrite only .kyos/ to the current baseline (destructive to .kyos only).
   - Use '--force' with '--init' to reset .claude/, .kyos/, and CLAUDE.md to the current managed baseline (destructive).
   - Use '--add' to install a skill, agent, MCP, or hook from the catalog.
-  - Use '--doctor' to check managed file integrity and report drift.
+  - Use '--doctor' to check managed file integrity and report drift (add '--fix' to collapse duplicate hook entries).
   - Managed state lives in .kyos/.
   - Managed source files live in .kyos/claude/, while repo customizations live in .claude/.
   - User-editable configuration lives in ${USER_CONFIG_FILE}.`);
@@ -96,7 +96,15 @@ async function main() {
   }
 
   if (hasFlag("--doctor")) {
-    printResult(runDoctor({ cwd }));
+    printResult(runDoctor({ cwd, fix: hasFlag("--fix") }));
+    return;
+  }
+
+  if (hasFlag("--fix")) {
+    printResult({
+      ok: false,
+      errors: ["--fix is only valid with --doctor."],
+    });
     return;
   }
 

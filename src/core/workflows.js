@@ -6,6 +6,7 @@ const {
   CLAUDE_MD_FILE,
   CLAUDE_ROOT,
   CATALOG_DIR,
+  FRAMEWORK_VERSION,
   LOCK_FILE,
   MANAGED_ROOT,
   MCP_CONFIG_FILE,
@@ -14,11 +15,15 @@ const {
 } = require("./constants");
 const {
   addInstalledCapability,
+  auditHookEntries,
+  dedupeMarkedHookEntry,
   ensureBaseHooks,
   hookMarker,
+  hookMarkerWithPackage,
   installHookWiring,
   loadMcpConfig,
   loadUserConfig,
+  refreshHookWiring,
   saveMcpConfig,
   saveUserConfig,
 } = require("./config");
@@ -436,23 +441,34 @@ function runUpdateKyos({ cwd }) {
   writeVersionStamp(cwd, repoName);
   ensureGitignoreHasKyos({ cwd });
 
+  // Update-only: refresh the versions of already-wired managed hooks (and adopt a legacy
+  // unmarked base-agent), but never append a hook that isn't already in settings.json.
+  const hookLines = [];
+  if (ensureBaseHooks(cwd, { adoptLegacy: true, updateOnly: true })) {
+    hookLines.push(`~ hook:base-agent refreshed (kyos-cli@${FRAMEWORK_VERSION})`);
+  }
+  hookLines.push(...refreshInstalledHooks({ cwd, config, updateOnly: true }));
+
   const created = plan.results.filter((item) => item.action === "create").length;
   const updated = plan.results.filter((item) => item.action === "update").length;
   const conflicts = plan.results.filter((item) => item.action === "conflict").length;
   const blocked = plan.results.filter((item) => item.action === "blocked").length;
 
+  const lines = plan.results.map((item) => {
+    if (item.reason) {
+      return `${symbolForAction(item.action)} ${item.path} (${item.reason})`;
+    }
+    return `${symbolForAction(item.action)} ${item.path}`;
+  });
+  lines.push(...hookLines);
+
   return {
     ok: conflicts === 0 && blocked === 0,
     summary: `update complete: ${created} created, ${updated} updated, ${conflicts} conflicts, ${blocked} blocked.`,
-    lines: plan.results.map((item) => {
-      if (item.reason) {
-        return `${symbolForAction(item.action)} ${item.path} (${item.reason})`;
-      }
-      return `${symbolForAction(item.action)} ${item.path}`;
-    }),
+    lines,
     warnings: [
       "Rewrote .kyos/ to the current baseline. Local changes under .kyos/ were discarded.",
-      ".claude/ and CLAUDE.md were not modified.",
+      `Refreshed existing managed hook wiring in .claude/settings.json to kyos-cli@${FRAMEWORK_VERSION}; no hooks were added.`,
     ],
   };
 }
@@ -466,9 +482,10 @@ function applyLocalClaudeSeed({ cwd, plan }) {
   }
 }
 
-function runDoctor({ cwd }) {
+function runDoctor({ cwd, fix = false }) {
   const warnings = [];
   const errors = [];
+  const hookFixLines = [];
   const repoName = path.basename(cwd);
   const config = loadUserConfig(cwd, repoName);
   const currentLock = loadLock(cwd);
@@ -546,6 +563,48 @@ function runDoctor({ cwd }) {
     commandReport.push(`command: ${filename} local ${localNote}; managed ${managedNote}`);
   }
 
+  // Hook wiring audit (read-only): duplicates, version drift, unmarked shadows.
+  const settings = readJsonIfExists(resolveRepoPath(cwd, MCP_CONFIG_FILE)) || {};
+  const managedHooks = buildManagedHooks(config);
+  const { duplicates, staleVersions, unmarkedShadows } = auditHookEntries(settings, {
+    managedHooks,
+    runningVersion: FRAMEWORK_VERSION,
+  });
+
+  for (const { name, event, count, versions } of duplicates) {
+    const rendered = versions.map((v) => v || "unversioned").join(", ");
+    warnings.push(
+      `hook '${name}' (${event}) has ${count} kyos-owned entries [versions: ${rendered}]; run --doctor --fix to collapse.`
+    );
+  }
+  for (const { name, version } of staleVersions) {
+    warnings.push(
+      `hook '${name}' marker is kyos-cli@${version || "unversioned"}; running ${FRAMEWORK_VERSION}. Run --apply or --update to refresh.`
+    );
+  }
+  for (const { name, event } of unmarkedShadows) {
+    warnings.push(
+      `hook '${name}' (${event}) has an unmarked entry alongside the managed one; review manually (kyos will not edit it).`
+    );
+  }
+
+  // --fix: collapse duplicate kyos-owned entries only (never version-pulls a lone entry,
+  // never touches unmarked entries). Writes settings.json once.
+  if (fix && duplicates.length > 0) {
+    let nextSettings = settings;
+    for (const { name, event } of duplicates) {
+      const result = dedupeMarkedHookEntry(nextSettings, event, { name, marker: hookMarker(name) });
+      if (!result) continue;
+      nextSettings = result.settings;
+      hookFixLines.push(
+        `~ hook:${name} collapsed ${result.count} -> 1 (kept kyos-cli@${result.version || "unversioned"})`
+      );
+    }
+    if (hookFixLines.length > 0) {
+      writeRepoTextFile(cwd, MCP_CONFIG_FILE, stableStringify(nextSettings));
+    }
+  }
+
   return {
     ok: errors.length === 0,
     summary: "doctor summary",
@@ -558,6 +617,7 @@ function runDoctor({ cwd }) {
       `installed mcps: ${(config.installed.mcps || []).length}`,
       `installed hooks: ${(config.installed.hooks || []).length}`,
       ...commandReport,
+      ...hookFixLines,
     ],
     warnings,
     errors,
@@ -583,7 +643,7 @@ function pickRuntime(runtimes) {
 // treat # as a comment).
 function buildHookCommand(runtime, scriptRelativePath, name) {
   const portable = runtime.command.replace("{scriptPath}", `\${CLAUDE_PROJECT_DIR}/${scriptRelativePath}`);
-  return `${portable} # ${hookMarker(name)}`;
+  return `${portable} # ${hookMarkerWithPackage(name)}`;
 }
 
 function writeHookScript(cwd, name, runtime, scriptRelativePath) {
@@ -807,6 +867,68 @@ function symbolForAction(action) {
   }
 }
 
+// Re-wire the catalog hooks recorded in config. `updateOnly: false` (the --apply/replay
+// path) creates the script + appends the entry when missing; `updateOnly: true` (the
+// --update path) only refreshes an already-wired marked entry and never appends.
+function refreshInstalledHooks({ cwd, config, updateOnly }) {
+  const catalog = loadCatalog();
+  const lines = [];
+
+  for (const name of (config.installed.hooks || [])) {
+    const capability = getCapability(catalog, "hook", name);
+    if (!capability) continue;
+
+    const runtime = pickRuntime(capability.runtimes);
+    const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
+    const command = buildHookCommand(runtime, scriptRelativePath, name);
+
+    if (updateOnly) {
+      const wiring = refreshHookWiring(cwd, {
+        event: capability.event,
+        matcher: capability.matcher,
+        command,
+        marker: hookMarker(name),
+      });
+      if (wiring.action === "updated") {
+        lines.push(`~ hook:${name} refreshed (kyos-cli@${FRAMEWORK_VERSION})`);
+      }
+      continue;
+    }
+
+    const scriptMissing = !fs.existsSync(resolveRepoPath(cwd, scriptRelativePath));
+    if (scriptMissing) {
+      writeHookScript(cwd, name, runtime, scriptRelativePath);
+    }
+    const wiring = installHookWiring(cwd, {
+      event: capability.event,
+      matcher: capability.matcher,
+      command,
+      marker: hookMarker(name),
+    });
+
+    if (wiring.action === "updated") {
+      lines.push(`~ hook:${name} rewired (portable)`);
+    } else if (scriptMissing || wiring.action === "added") {
+      lines.push(`+ hook:${name}`);
+    }
+  }
+
+  return lines;
+}
+
+// The set of hooks this repo manages: base-agent (always) plus each installed catalog
+// hook, resolved to its event/matcher. Used by the doctor audit.
+function buildManagedHooks(config) {
+  const catalog = loadCatalog();
+  const managedHooks = [{ name: "base-agent", event: "PostToolUse", matcher: "Agent" }];
+  for (const name of (config.installed.hooks || [])) {
+    const capability = getCapability(catalog, "hook", name);
+    if (!capability) continue;
+    managedHooks.push({ name, event: capability.event, matcher: capability.matcher });
+  }
+  return managedHooks;
+}
+
 function replayInstalledCapabilities({ cwd, config }) {
   const catalog = loadCatalog();
   const lines = [];
@@ -829,31 +951,7 @@ function replayInstalledCapabilities({ cwd, config }) {
     }
   }
 
-  for (const name of (config.installed.hooks || [])) {
-    const capability = getCapability(catalog, "hook", name);
-    if (!capability) continue;
-
-    const runtime = pickRuntime(capability.runtimes);
-    const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
-    const command = buildHookCommand(runtime, scriptRelativePath, name);
-
-    const scriptMissing = !fs.existsSync(resolveRepoPath(cwd, scriptRelativePath));
-    if (scriptMissing) {
-      writeHookScript(cwd, name, runtime, scriptRelativePath);
-    }
-    const wiring = installHookWiring(cwd, {
-      event: capability.event,
-      matcher: capability.matcher,
-      command,
-      marker: hookMarker(name),
-    });
-
-    if (wiring.action === "updated") {
-      lines.push(`~ hook:${name} rewired (portable)`);
-    } else if (scriptMissing || wiring.action === "added") {
-      lines.push(`+ hook:${name}`);
-    }
-  }
+  lines.push(...refreshInstalledHooks({ cwd, config, updateOnly: false }));
 
   const mcpNames = config.installed.mcps || [];
   if (mcpNames.length > 0) {
