@@ -1,4 +1,5 @@
 const path = require("path");
+const { version: FRAMEWORK_VERSION } = require("../../package.json");
 
 const FRAMEWORK_NAME = "kyos";
 const FRAMEWORK_PACKAGE = "kyos-cli";
@@ -21,6 +22,7 @@ module.exports = {
   CLAUDE_ROOT,
   FRAMEWORK_NAME,
   FRAMEWORK_PACKAGE,
+  FRAMEWORK_VERSION,
   HOOK_MARKER_PREFIX,
   LOCK_FILE,
   MANAGED_ROOT,

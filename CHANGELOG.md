@@ -3,6 +3,12 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.0] - 2026-06-13
+### Changed
+- feat: package-aware hook marker + duplicate detection in doctor
+- chore: remove rudimentary code and on version trakcing for showing warning
+- feat: enhance hook management with ownership markers fix: making repo-sandbox hook portable
+
 ## [1.2.0] - 2026-06-11
 ### Changed
 - fix(ci): publish to npm on version tag push instead of GitHub release

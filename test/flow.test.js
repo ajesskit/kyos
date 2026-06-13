@@ -5,7 +5,15 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const { runApply, runBootstrap, runDoctor, runUpdateKyos, addCapability } = require("../src/core/workflows");
-const { ensureBaseHooks } = require("../src/core/config");
+const {
+  ensureBaseHooks,
+  parseOwnedHookName,
+  parsePackageVersion,
+  compareHookVersions,
+  auditHookEntries,
+  dedupeMarkedHookEntry,
+} = require("../src/core/config");
+const { version: PKG_VERSION } = require("../package.json");
 
 function mkTempDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -999,5 +1007,388 @@ module.exports = function register(test) {
 
     const doctor = runDoctor({ cwd });
     assert.ok(doctor.lines.some((l) => String(l).includes("installed hooks: 1")), "doctor must report installed hooks count");
+  });
+
+  // ── Slice 1: marker carries package@version ──────────────────────────────────
+
+  test("newly wired hook command carries package=kyos-cli@<version>", () => {
+    const cwd = mkTempDir("kyos-marker-pkg-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { entries } = getSandboxEntry(cwd);
+    const command = entries[0].hooks[0].command;
+    assert.ok(command.includes("managedBy=kyos/repo-sandbox"), "marker prefix must remain");
+    assert.ok(command.includes(`package=kyos-cli@${PKG_VERSION}`), "command must carry package marker with current version");
+  });
+
+  test("base-agent command carries package=kyos-cli@<version>", () => {
+    const cwd = mkTempDir("kyos-marker-base-pkg-");
+    runBootstrap({ cwd, apply: false });
+
+    const settings = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    const agent = settings.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    assert.ok(agent.hooks[0].command.includes(`package=kyos-cli@${PKG_VERSION}`), "base-agent must carry package marker");
+  });
+
+  test("pre-package marker is still recognized and gains package= on reconcile", () => {
+    const cwd = mkTempDir("kyos-marker-legacy-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    // Strip the package= segment to mimic an entry written by an older kyos-cli.
+    const { settings, entries } = getSandboxEntry(cwd);
+    entries[0].hooks[0].command = entries[0].hooks[0].command.replace(/ package=kyos-cli@[^\s#]+/, "");
+    writeSettings(cwd, settings);
+    assert.ok(!getSandboxEntry(cwd).entries[0].hooks[0].command.includes("package="), "precondition: no package segment");
+
+    runApply({ cwd });
+
+    const after = getSandboxEntry(cwd);
+    assert.equal(after.entries.length, 1, "still one entry — reconciled in place, not duplicated");
+    assert.ok(after.entries[0].hooks[0].command.includes(`package=kyos-cli@${PKG_VERSION}`), "reconcile must add the package marker");
+  });
+
+  // ── Slice 2: marker parsing + version compare ────────────────────────────────
+
+  test("parseOwnedHookName reads kyos name off marked commands only", () => {
+    assert.equal(parseOwnedHookName("echo x # managedBy=kyos/repo-sandbox package=kyos-cli@1.2.0"), "repo-sandbox");
+    assert.equal(parseOwnedHookName("echo x # managedBy=kyos/base-agent"), "base-agent");
+    assert.equal(parseOwnedHookName("echo my-own-guard"), null);
+    assert.equal(parseOwnedHookName(undefined), null);
+  });
+
+  test("parsePackageVersion returns version or null for pre-package markers", () => {
+    assert.equal(parsePackageVersion("x # managedBy=kyos/repo-sandbox package=kyos-cli@1.3.0"), "1.3.0");
+    assert.equal(parsePackageVersion("x # managedBy=kyos/repo-sandbox"), null);
+    assert.equal(parsePackageVersion("echo nope"), null);
+  });
+
+  test("compareHookVersions orders numerically and treats null as lowest", () => {
+    assert.ok(compareHookVersions("1.10.0", "1.9.0") > 0, "1.10.0 > 1.9.0");
+    assert.ok(compareHookVersions("1.9.0", "1.10.0") < 0, "1.9.0 < 1.10.0");
+    assert.equal(compareHookVersions("1.2.0", "1.2.0"), 0, "equal versions");
+    assert.ok(compareHookVersions(null, "1.0.0") < 0, "null sorts lowest");
+    assert.ok(compareHookVersions("1.0.0", null) > 0, "versioned beats null");
+    assert.equal(compareHookVersions(null, null), 0, "two nulls equal");
+    assert.ok(compareHookVersions("abc", "1.0.0") < 0, "non-numeric sorts lowest");
+  });
+
+  // ── Slice 3: doctor read-only audit ──────────────────────────────────────────
+
+  const SANDBOX_MATCHER = "Read|Edit|Write|NotebookEdit|MultiEdit|Bash|PowerShell";
+
+  test("doctor warns on two kyos-owned repo-sandbox entries and stays exit-0", () => {
+    const cwd = mkTempDir("kyos-doctor-dup-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings, entries } = getSandboxEntry(cwd);
+    settings.hooks.PreToolUse.push(JSON.parse(JSON.stringify(entries[0])));
+    writeSettings(cwd, settings);
+
+    const doctor = runDoctor({ cwd });
+    assert.equal(doctor.ok, true, "duplicates are warnings, not errors");
+    assert.ok(
+      doctor.warnings.some((w) => /repo-sandbox/.test(w) && /2 kyos-owned entries/.test(w) && /--doctor --fix/.test(w)),
+      "must warn about the duplicate"
+    );
+  });
+
+  test("doctor reports a lone stale-version owned entry without changing the file", () => {
+    const cwd = mkTempDir("kyos-doctor-stale-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings, entries } = getSandboxEntry(cwd);
+    entries[0].hooks[0].command = entries[0].hooks[0].command.replace(/package=kyos-cli@[^\s#]+/, "package=kyos-cli@0.0.1");
+    writeSettings(cwd, settings);
+    const before = fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8");
+
+    const doctor = runDoctor({ cwd });
+    assert.equal(doctor.ok, true);
+    assert.ok(
+      doctor.warnings.some((w) => /repo-sandbox/.test(w) && /kyos-cli@0\.0\.1/.test(w) && w.includes(PKG_VERSION)),
+      "must report stale version and the running version"
+    );
+    assert.equal(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"), before, "plain doctor must not write");
+  });
+
+  test("doctor warns on an unmarked entry shadowing a managed hook", () => {
+    const cwd = mkTempDir("kyos-doctor-shadow-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings } = getSandboxEntry(cwd);
+    settings.hooks.PreToolUse.push({ matcher: SANDBOX_MATCHER, hooks: [{ type: "command", command: "echo my-own-guard" }] });
+    writeSettings(cwd, settings);
+
+    const doctor = runDoctor({ cwd });
+    assert.equal(doctor.ok, true);
+    assert.ok(
+      doctor.warnings.some((w) => /repo-sandbox/.test(w) && /unmarked entry/.test(w)),
+      "must surface the unmarked shadow"
+    );
+  });
+
+  test("doctor handles a lone unmarked legacy base-agent without crashing, exit-0", () => {
+    const cwd = mkTempDir("kyos-doctor-legacy-base-");
+    runBootstrap({ cwd, apply: false });
+
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const agent = settings.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    agent.hooks[0].command = agent.hooks[0].command.replace(/ # managedBy=kyos\/base-agent[^\n]*/, "");
+    fs.writeFileSync(settingsPath, JSON.stringify(settings), "utf8");
+    const before = fs.readFileSync(settingsPath, "utf8");
+
+    const doctor = runDoctor({ cwd });
+    assert.equal(doctor.ok, true, "must stay exit-0");
+    // A lone unmarked entry with no marked counterpart is the legacy case: no shadow finding.
+    assert.equal(fs.readFileSync(settingsPath, "utf8"), before, "plain doctor must not write");
+  });
+
+  test("plain doctor leaves settings.json byte-identical", () => {
+    const cwd = mkTempDir("kyos-doctor-readonly-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const before = fs.readFileSync(settingsPath, "utf8");
+    runDoctor({ cwd });
+    assert.equal(fs.readFileSync(settingsPath, "utf8"), before, "doctor must be read-only");
+  });
+
+  test("auditHookEntries is a pure detector over the three finding types", () => {
+    const marked = (version) => ({
+      matcher: SANDBOX_MATCHER,
+      hooks: [{ type: "command", command: `echo x # managedBy=kyos/repo-sandbox package=kyos-cli@${version}` }],
+    });
+    const managedHooks = [{ name: "repo-sandbox", event: "PreToolUse", matcher: SANDBOX_MATCHER }];
+
+    const dup = auditHookEntries({ hooks: { PreToolUse: [marked("1.2.0"), marked("1.3.0")] } }, { managedHooks, runningVersion: "1.3.0" });
+    assert.equal(dup.duplicates.length, 1);
+    assert.deepEqual(dup.duplicates[0].versions, ["1.2.0", "1.3.0"]);
+
+    const stale = auditHookEntries({ hooks: { PreToolUse: [marked("0.0.1")] } }, { managedHooks, runningVersion: "1.3.0" });
+    assert.equal(stale.staleVersions.length, 1);
+    assert.equal(stale.staleVersions[0].version, "0.0.1");
+
+    const shadow = auditHookEntries(
+      { hooks: { PreToolUse: [marked("1.3.0"), { matcher: SANDBOX_MATCHER, hooks: [{ type: "command", command: "echo own" }] }] } },
+      { managedHooks, runningVersion: "1.3.0" }
+    );
+    assert.equal(shadow.unmarkedShadows.length, 1);
+  });
+
+  // ── Slice 4: doctor --fix dedupe ─────────────────────────────────────────────
+
+  test("--doctor --fix collapses duplicates to the highest-version entry, kept verbatim", () => {
+    const cwd = mkTempDir("kyos-fix-dedupe-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings, entries } = getSandboxEntry(cwd);
+    const low = JSON.parse(JSON.stringify(entries[0]));
+    low.hooks[0].command = low.hooks[0].command.replace(/package=kyos-cli@[^\s#]+/, "package=kyos-cli@1.2.0");
+    const high = JSON.parse(JSON.stringify(entries[0]));
+    high.hooks[0].command = high.hooks[0].command.replace(/package=kyos-cli@[^\s#]+/, "package=kyos-cli@1.3.0");
+    settings.hooks.PreToolUse = [low, high];
+    writeSettings(cwd, settings);
+    const keptCommand = high.hooks[0].command;
+
+    const doctor = runDoctor({ cwd, fix: true });
+    assert.equal(doctor.ok, true);
+
+    const after = getSandboxEntry(cwd);
+    assert.equal(after.entries.length, 1, "collapsed to one");
+    assert.equal(after.entries[0].hooks[0].command, keptCommand, "survivor is the 1.3.0 entry, verbatim");
+    assert.ok(doctor.lines.some((l) => /collapsed 2 -> 1/.test(l) && /1\.3\.0/.test(l)), "must report the collapse");
+  });
+
+  test("--doctor --fix leaves a lone stale entry unchanged", () => {
+    const cwd = mkTempDir("kyos-fix-lone-stale-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings, entries } = getSandboxEntry(cwd);
+    entries[0].hooks[0].command = entries[0].hooks[0].command.replace(/package=kyos-cli@[^\s#]+/, "package=kyos-cli@0.0.1");
+    writeSettings(cwd, settings);
+    const before = fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8");
+
+    runDoctor({ cwd, fix: true });
+    assert.equal(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"), before, "--fix must not touch a lone stale entry");
+  });
+
+  test("--doctor --fix never removes an unmarked entry but still reports the shadow", () => {
+    const cwd = mkTempDir("kyos-fix-unmarked-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    const { settings } = getSandboxEntry(cwd);
+    settings.hooks.PreToolUse.push({ matcher: SANDBOX_MATCHER, hooks: [{ type: "command", command: "echo my-own-guard" }] });
+    writeSettings(cwd, settings);
+
+    const doctor = runDoctor({ cwd, fix: true });
+    const after = getSandboxEntry(cwd);
+    assert.ok(
+      after.settings.hooks.PreToolUse.some((h) => h.hooks[0].command === "echo my-own-guard"),
+      "unmarked entry must survive --fix"
+    );
+    assert.ok(doctor.warnings.some((w) => /unmarked entry/.test(w)), "shadow still reported");
+  });
+
+  test("dedupeMarkedHookEntry returns null when only one owned entry exists", () => {
+    const marker = "managedBy=kyos/repo-sandbox";
+    const settings = {
+      hooks: { PreToolUse: [{ matcher: SANDBOX_MATCHER, hooks: [{ type: "command", command: `x # ${marker} package=kyos-cli@1.2.0` }] }] },
+    };
+    assert.equal(dedupeMarkedHookEntry(settings, "PreToolUse", { name: "repo-sandbox", marker }), null);
+  });
+
+  test("dedupeMarkedHookEntry keeps first on tie / unparseable versions (stable)", () => {
+    const marker = "managedBy=kyos/repo-sandbox";
+    const mk = (cmd) => ({ matcher: SANDBOX_MATCHER, hooks: [{ type: "command", command: cmd }] });
+    const first = mk(`first # ${marker}`);
+    const second = mk(`second # ${marker}`);
+    const result = dedupeMarkedHookEntry({ hooks: { PreToolUse: [first, second] } }, "PreToolUse", { name: "repo-sandbox", marker });
+    assert.equal(result.settings.hooks.PreToolUse.length, 1);
+    assert.equal(result.settings.hooks.PreToolUse[0].hooks[0].command, `first # ${marker}`, "first encountered survives on tie");
+  });
+
+  test("--fix without --doctor errors with a non-zero exit", () => {
+    const cwd = mkTempDir("kyos-fix-cli-guard-");
+    const binPath = path.join(__dirname, "..", "bin", "kyos.js");
+    const run = spawnSync("node", [binPath, "--fix"], { cwd, encoding: "utf8" });
+    assert.notEqual(run.status, 0, "must exit non-zero");
+    assert.ok(/--fix is only valid with --doctor/.test(run.stderr || ""), "must explain the constraint");
+  });
+
+  // ── Slice 5: ensureBaseHooks modes ───────────────────────────────────────────
+
+  const LEGACY_BASE_COMMAND =
+    "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"PROCESS RULE: A subagent just completed. If the user now reports a bug or issue with its output, re-spawn the SAME agent type via the Agent tool — do NOT call Edit or Write inline. Only fix inline if it is a single-line typo or wiring mistake faster to correct than to brief an agent (per .claude/rules/process.md).\"}}' ";
+
+  function writeBaseSettings(cwd, postToolUse) {
+    fs.mkdirSync(path.join(cwd, ".claude"), { recursive: true });
+    fs.writeFileSync(path.join(cwd, ".claude", "settings.json"), JSON.stringify({ hooks: { PostToolUse: postToolUse } }), "utf8");
+  }
+
+  test("ensureBaseHooks adoptLegacy rewrites a signature-matched unmarked entry to marked+versioned", () => {
+    const cwd = mkTempDir("kyos-adopt-legacy-");
+    writeBaseSettings(cwd, [{ matcher: "Agent", hooks: [{ type: "command", command: LEGACY_BASE_COMMAND }] }]);
+
+    const changed = ensureBaseHooks(cwd, { adoptLegacy: true });
+    assert.equal(changed, true, "must adopt the legacy entry");
+
+    const after = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    const agent = after.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    assert.ok(agent.hooks[0].command.includes(`managedBy=kyos/base-agent package=kyos-cli@${PKG_VERSION}`), "now marked + versioned");
+    assert.equal(after.hooks.PostToolUse.filter((h) => h.matcher === "Agent").length, 1, "no duplicate added");
+  });
+
+  test("ensureBaseHooks adoptLegacy leaves a foreign Agent entry untouched", () => {
+    const cwd = mkTempDir("kyos-adopt-foreign-");
+    writeBaseSettings(cwd, [{ matcher: "Agent", hooks: [{ type: "command", command: "echo my-own-agent-hook" }] }]);
+    const before = fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8");
+
+    const changed = ensureBaseHooks(cwd, { adoptLegacy: true, updateOnly: true });
+    assert.equal(changed, false, "foreign entry is not adopted");
+    assert.equal(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"), before, "file unchanged");
+  });
+
+  test("ensureBaseHooks updateOnly does not append when no entry exists", () => {
+    const cwd = mkTempDir("kyos-updateonly-noappend-");
+    writeBaseSettings(cwd, [{ matcher: "Bash", hooks: [{ type: "command", command: "echo hi" }] }]);
+
+    const changed = ensureBaseHooks(cwd, { updateOnly: true });
+    assert.equal(changed, false, "update-only must not append base-agent");
+    const after = JSON.parse(fs.readFileSync(path.join(cwd, ".claude", "settings.json"), "utf8"));
+    assert.ok(!after.hooks.PostToolUse.some((h) => h.matcher === "Agent"), "no Agent entry added");
+  });
+
+  // ── Slice 6: --update refreshes existing managed hooks (update-only) ──────────
+
+  test("--update refreshes an already-wired older-version base-agent", () => {
+    const cwd = mkTempDir("kyos-update-base-refresh-");
+    runBootstrap({ cwd, apply: false });
+
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const agent = settings.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    agent.hooks[0].command = agent.hooks[0].command.replace(/package=kyos-cli@[^\s#]+/, "package=kyos-cli@0.0.1");
+    fs.writeFileSync(settingsPath, JSON.stringify(settings), "utf8");
+
+    const result = runUpdateKyos({ cwd });
+    assert.equal(result.ok, true);
+    const after = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const refreshed = after.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    assert.ok(refreshed.hooks[0].command.includes(`package=kyos-cli@${PKG_VERSION}`), "base-agent version refreshed");
+    assert.ok(result.lines.some((l) => /hook:base-agent refreshed/.test(l)), "must report the refresh");
+  });
+
+  test("--update adopts a lone unmarked legacy base-agent", () => {
+    const cwd = mkTempDir("kyos-update-adopt-");
+    runBootstrap({ cwd, apply: false });
+
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const agent = settings.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    agent.hooks[0].command = LEGACY_BASE_COMMAND; // unmarked legacy payload
+    fs.writeFileSync(settingsPath, JSON.stringify(settings), "utf8");
+
+    runUpdateKyos({ cwd });
+
+    const after = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    const adopted = after.hooks.PostToolUse.find((h) => h.matcher === "Agent");
+    assert.ok(adopted.hooks[0].command.includes(`managedBy=kyos/base-agent package=kyos-cli@${PKG_VERSION}`), "legacy base-agent adopted");
+    assert.equal(after.hooks.PostToolUse.filter((h) => h.matcher === "Agent").length, 1, "no duplicate");
+  });
+
+  test("--update does not add a catalog hook absent from settings.json", () => {
+    const cwd = mkTempDir("kyos-update-no-add-hook-");
+    runBootstrap({ cwd, apply: false });
+    addCapability({ cwd, type: "hook", name: "repo-sandbox" });
+
+    // Remove the wired PreToolUse entry but keep repo-sandbox in config.json.
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const settings = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    delete settings.hooks.PreToolUse;
+    fs.writeFileSync(settingsPath, JSON.stringify(settings), "utf8");
+
+    runUpdateKyos({ cwd });
+
+    const after = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    assert.ok(!after.hooks.PreToolUse, "update-only must not re-add the absent catalog hook");
+  });
+
+  test("--update with only base-agent present adds nothing else", () => {
+    const cwd = mkTempDir("kyos-update-base-only-");
+    runBootstrap({ cwd, apply: false });
+
+    const settingsPath = path.join(cwd, ".claude", "settings.json");
+    const countEntries = (s) => Object.values(s.hooks || {}).reduce((n, arr) => n + arr.length, 0);
+    const before = countEntries(JSON.parse(fs.readFileSync(settingsPath, "utf8")));
+
+    runUpdateKyos({ cwd });
+
+    const after = countEntries(JSON.parse(fs.readFileSync(settingsPath, "utf8")));
+    assert.equal(after, before, "no new hook entries added by --update");
+  });
+
+  test("--update still resets .kyos to baseline", () => {
+    const cwd = mkTempDir("kyos-update-still-resets-");
+    runBootstrap({ cwd, apply: false });
+
+    const managedSpecPath = path.join(cwd, ".kyos", "claude", "commands", "spec.md");
+    fs.writeFileSync(managedSpecPath, "# tampered\n", "utf8");
+
+    runUpdateKyos({ cwd });
+
+    const catalogSpec = fs.readFileSync(
+      path.join(__dirname, "..", "catalog", "claude-base", "claude", "commands", "spec.md"),
+      "utf8"
+    );
+    assert.equal(fs.readFileSync(managedSpecPath, "utf8"), catalogSpec, ".kyos must be reset to baseline");
   });
 };
