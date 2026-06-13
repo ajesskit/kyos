@@ -15,6 +15,7 @@ const {
 const {
   addInstalledCapability,
   ensureBaseHooks,
+  hookMarker,
   installHookWiring,
   loadMcpConfig,
   loadUserConfig,
@@ -29,7 +30,9 @@ const {
   findStaleManagedFiles,
   loadLock,
   planManagedChanges,
+  readVersionStamp,
   renderManagedFiles,
+  writeVersionStamp,
 } = require("./managed-files");
 
 function readFrontmatterField(absolutePath, field) {
@@ -238,6 +241,7 @@ function runBootstrap({ cwd, apply, force }) {
     applyManagedChanges({ cwd, plan });
     applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
     ensureBaseHooks(cwd);
+    writeVersionStamp(cwd, repoName);
     ensureGitignoreHasKyos({ cwd });
   }
 
@@ -429,6 +433,7 @@ function runUpdateKyos({ cwd }) {
   const currentLock = loadLock(cwd);
   const plan = planManagedChanges({ cwd, desiredFiles: kyosOnlyFiles, currentLock });
   applyManagedChanges({ cwd, plan });
+  writeVersionStamp(cwd, repoName);
   ensureGitignoreHasKyos({ cwd });
 
   const created = plan.results.filter((item) => item.action === "create").length;
@@ -572,16 +577,33 @@ function pickRuntime(runtimes) {
   return runtimes[runtimes.length - 1];
 }
 
-function installHook({ cwd, name, capability }) {
-  const runtime = pickRuntime(capability.runtimes);
-  const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
+// ${CLAUDE_PROJECT_DIR} is expanded by Claude Code before the command is spawned,
+// so the wired entry stays machine-independent. The trailing shell comment marks
+// the entry as kyos-owned (both documented hook shells, bash and powershell,
+// treat # as a comment).
+function buildHookCommand(runtime, scriptRelativePath, name) {
+  const portable = runtime.command.replace("{scriptPath}", `\${CLAUDE_PROJECT_DIR}/${scriptRelativePath}`);
+  return `${portable} # ${hookMarker(name)}`;
+}
+
+function writeHookScript(cwd, name, runtime, scriptRelativePath) {
   const catalogScriptPath = path.join(CATALOG_DIR, "hooks", name, runtime.script);
   const scriptContent = fs.readFileSync(catalogScriptPath, "utf8");
   writeRepoTextFile(cwd, scriptRelativePath, scriptContent);
-  const absoluteScriptPath = resolveRepoPath(cwd, scriptRelativePath);
-  const command = runtime.command.replace("{scriptPath}", absoluteScriptPath);
-  installHookWiring(cwd, { event: capability.event, matcher: capability.matcher, command });
-  return { runtime, command };
+}
+
+function installHook({ cwd, name, capability }) {
+  const runtime = pickRuntime(capability.runtimes);
+  const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
+  writeHookScript(cwd, name, runtime, scriptRelativePath);
+  const command = buildHookCommand(runtime, scriptRelativePath, name);
+  const wiring = installHookWiring(cwd, {
+    event: capability.event,
+    matcher: capability.matcher,
+    command,
+    marker: hookMarker(name),
+  });
+  return { runtime, command, wiring };
 }
 
 function addCapability({ cwd, type, name }) {
@@ -813,20 +835,22 @@ function replayInstalledCapabilities({ cwd, config }) {
 
     const runtime = pickRuntime(capability.runtimes);
     const scriptRelativePath = `${capability.installDir}/${runtime.script}`;
-    const absoluteScriptPath = resolveRepoPath(cwd, scriptRelativePath);
-    const command = runtime.command.replace("{scriptPath}", absoluteScriptPath);
+    const command = buildHookCommand(runtime, scriptRelativePath, name);
 
     const scriptMissing = !fs.existsSync(resolveRepoPath(cwd, scriptRelativePath));
-    const settings = readJsonIfExists(path.resolve(cwd, MCP_CONFIG_FILE)) || {};
-    const eventEntries = (settings.hooks && settings.hooks[capability.event]) || [];
-    const wired = eventEntries.some(
-      (e) => e.matcher === capability.matcher &&
-              Array.isArray(e.hooks) &&
-              e.hooks.some((h) => h.command === command)
-    );
+    if (scriptMissing) {
+      writeHookScript(cwd, name, runtime, scriptRelativePath);
+    }
+    const wiring = installHookWiring(cwd, {
+      event: capability.event,
+      matcher: capability.matcher,
+      command,
+      marker: hookMarker(name),
+    });
 
-    if (scriptMissing || !wired) {
-      installHook({ cwd, name, capability });
+    if (wiring.action === "updated") {
+      lines.push(`~ hook:${name} rewired (portable)`);
+    } else if (scriptMissing || wiring.action === "added") {
       lines.push(`+ hook:${name}`);
     }
   }
@@ -861,6 +885,13 @@ function runApply({ cwd }) {
 
   const repoName = path.basename(cwd);
   const config = loadUserConfig(cwd, repoName);
+
+  // A pre-stamp release wrote no version.json. Detect that before writeVersionStamp
+  // overwrites it, so we can warn the user to audit hooks for orphaned entries that
+  // older kyos versions may have left behind (we no longer migrate them in place).
+  const priorStamp = readVersionStamp(cwd);
+  const fromUnknownVersion = !priorStamp || !priorStamp.version;
+
   const desiredFiles = renderManagedFiles({ cwd, config });
   const currentLock = loadLock(cwd);
   const plan = planManagedChanges({ cwd, desiredFiles, currentLock });
@@ -876,6 +907,7 @@ function runApply({ cwd }) {
   applyManagedChanges({ cwd, plan: { results: createOnlyResults, finalLockFiles: createOnlyLockFiles } });
   applyLocalClaudeSeed({ cwd, plan: localSeedPlan });
   ensureBaseHooks(cwd);
+  writeVersionStamp(cwd, repoName);
   const installedLines = replayInstalledCapabilities({ cwd, config });
   ensureGitignoreHasKyos({ cwd });
 
@@ -905,11 +937,23 @@ function runApply({ cwd }) {
     lines.push(`! ${stalePath} (managed previously but no longer part of the current base set)`);
   }
 
+  const warnings = [];
+  if (stale.length > 0) {
+    warnings.push("Stale managed files were detected. Review them before removing anything.");
+  }
+  if (fromUnknownVersion) {
+    warnings.push(
+      "This installation was last written by an unknown kyos version. Review the hooks " +
+      "in .claude/settings.json and remove any orphaned entries (e.g. stale or duplicate " +
+      "hook commands) that older versions may have left behind."
+    );
+  }
+
   return {
     ok: true,
     summary: `apply complete: ${created} created, ${skipped} skipped.`,
     lines,
-    warnings: stale.length > 0 ? ["Stale managed files were detected. Review them before removing anything."] : [],
+    warnings,
   };
 }
 

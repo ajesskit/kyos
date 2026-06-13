@@ -20,6 +20,7 @@ const {
 } = require("./fs");
 const { sha256 } = require("./hash");
 const { stableStringify } = require("./json");
+const { version: FRAMEWORK_VERSION } = require("../../package.json");
 
 function readCatalogText(relativePathFromCatalogDir) {
   const absolutePath = path.join(CATALOG_DIR, ...relativePathFromCatalogDir.split("/"));
@@ -80,13 +81,26 @@ This repository uses a shared Claude Code bootstrap managed by ${FRAMEWORK_PACKA
     );
   }
 
-  baseFiles[VERSION_FILE] = stableStringify({
+  return baseFiles;
+}
+
+// Direct-written metadata, not a checksummed managed file: --apply only writes
+// "create"-action managed changes, so a stamp in the managed layer could never
+// refresh on upgrade. Called on every init/update/apply.
+function writeVersionStamp(cwd, repoName) {
+  writeRepoTextFile(cwd, VERSION_FILE, stableStringify({
     framework: FRAMEWORK_PACKAGE,
     managedRoot: MANAGED_ROOT,
     repoName,
-  });
+    version: FRAMEWORK_VERSION,
+  }));
+}
 
-  return baseFiles;
+// Returns the recorded stamp, or null when none exists. A repo wired by a
+// pre-stamp release has no version.json, which is how callers recognize an
+// installation upgraded "from an unknown version".
+function readVersionStamp(cwd) {
+  return readJsonIfExists(resolveRepoPath(cwd, VERSION_FILE));
 }
 
 function loadLock(cwd) {
@@ -173,7 +187,7 @@ function applyManagedChanges({ cwd, plan }) {
 }
 
 function findStaleManagedFiles(cwd, desiredFiles, currentLock) {
-  const ignoredPaths = new Set([LOCK_FILE, USER_CONFIG_FILE]);
+  const ignoredPaths = new Set([LOCK_FILE, USER_CONFIG_FILE, VERSION_FILE]);
   const desiredPaths = new Set(
     Object.keys(desiredFiles).filter((pathName) => !ignoredPaths.has(pathName))
   );
@@ -201,5 +215,7 @@ module.exports = {
   findStaleManagedFiles,
   loadLock,
   planManagedChanges,
+  readVersionStamp,
   renderManagedFiles,
+  writeVersionStamp,
 };
