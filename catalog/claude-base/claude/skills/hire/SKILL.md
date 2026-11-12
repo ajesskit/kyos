@@ -1,6 +1,13 @@
-# /hire
+---
+name: hire
+description: Stock the repo with the support it is missing before the next feature run trips over the same obvious gaps.
+disable-model-invocation: true
+---
 
-> Stock the repo with the support it is missing before the next feature run trips over the same obvious gaps.
+# Hire
+
+Stock the repo with the support it is missing before the next feature run trips over the same
+obvious gaps.
 
 ## Trigger
 
@@ -15,7 +22,7 @@ You usually need it after:
 
 ## End state
 
-This command is successful when the repo gains practical support, not when it produces the longest list of additions.
+This skill is successful when the repo gains practical support, not when it produces the longest list of additions.
 
 Useful outcomes include:
 
@@ -28,7 +35,8 @@ Useful outcomes include:
 
 Work in this order:
 
-1. Read `CLAUDE.md` and `.claude/commands/project-context.md`.
+1. Read `CLAUDE.md` (repo/project context — architecture,
+   main components, external dependencies — if present).
 2. Inspect current support surfaces: `.mcp.json`, `.claude/agents/`, `.claude/skills/`.
 3. Infer the actual stack from docs and repo signals.
 4. Look for the highest-value gaps, not every possible gap.
@@ -63,22 +71,14 @@ Rule of thumb: if the description would still be true after swapping the repo fo
 
 If you genuinely cannot describe the capability yet, do not create the stub — record the gap in the field report instead.
 
-## Things this command should not do
+## Things this skill should not do
 
 - write application features
 - register tools just because they look impressive
 - hide missing support behind generic placeholders
 - treat the first setup pass as final
 
-## Example prompts
-
-```text
-/hire
-/hire prepare this repo for oauth, redis, and github actions
-/hire we are introducing background jobs and object storage next
-```
-
-## What Claude should return
+## What Agent should return
 
 The result should read like a field report:
 
@@ -90,4 +90,11 @@ The result should read like a field report:
 
 ## Hand-off
 
-Once the repo support layer is in better shape, continue with `/spec`, `/tech`, or `/implement`.
+Once the repo support layer is in better shape, continue with the `spec`, `tech`, or `implement` skill.
+
+## Local additions
+
+## Local additions
+
+- Generic extensions are located at `.claude/skill-overrides/_shared.md`. 
+- Skill specific extensions are located at `.claude/skill-overrides/hire.md`. These have priority when competing with more generic instructions.

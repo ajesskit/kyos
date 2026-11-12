@@ -3,6 +3,7 @@
 [![Socket Badge](https://badge.socket.dev/npm/package/kyos-cli)](https://socket.dev/npm/package/kyos-cli)
 [![npm](https://img.shields.io/npm/v/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![npm downloads](https://img.shields.io/npm/dt/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
+[![skills.sh](https://skills.sh/b/ajesskit/kyos)](https://skills.sh/ajesskit/kyos)
 [![License](https://img.shields.io/npm/l/kyos-cli)](https://www.npmjs.com/package/kyos-cli)
 [![Node version](https://img.shields.io/node/v/kyos-cli)](https://nodejs.org)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ajesskit-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ajesskit)
@@ -15,9 +16,21 @@ Claude Code works best with structure — without it, conversations drift, conte
 npx kyos-cli --init
 ```
 
-- Sets up a base Claude Code structure in your project — commands, workflow steps, and a config.
+- Sets up a base Claude Code structure in your project — skills, workflow steps, and a config.
 - Safe to run on an existing project: it shows you what it would change before doing anything.
 - Run `kyos-cli --apply` to add only what's missing, or `kyos-cli --init --force` to start fresh.
+
+<details>
+  <summary><strong>Codex, Copilot and other harnesses</strong></summary>
+
+  1. Use skills.sh installer:
+  ```bash
+  npx skills@latest add ajesskit/kyos
+  ```
+  2. Run `/kyos-setup` skill that will help you define meaningful defaults for your project.
+
+  Pull updates with `npx skills update` when you feel like it.
+</details>
 
 ## The workflow
 
@@ -51,6 +64,7 @@ Three commands sit outside the main chain. Reach for them when the repo needs a 
 
 ## Tips
 
+- **Tailor the skills to match your flow** — kyos skills come with built-in references to `./claude/skill-override/<skill>.md` that gives you the best of both 1) reliable way to sync the curated skill content and 2) tweak the skill content for your specific workflow.
 - **Compact after spec or tech** — if the context meter hits 50%+ after `/spec` or `/tech`, run `/compact` before continuing. Everything is saved to disk, so nothing is lost and the next command starts with a clean budget.
 - **Clear before implement** — run `/clear` just before `/implement` to give the implementation run the full context window. Then reference the saved tasks file directly: `/implement @docs/execution/your-feature/tasks.md`.
 - **Pick up where you left off** — if `spec.md`, `tech.md`, or `tasks.md` already exist when you open a new session, pass them in directly: `/tech @docs/execution/your-feature/spec.md`. Claude will read the file and continue from there.

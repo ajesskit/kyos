@@ -51,18 +51,24 @@ Changes to managed files are planned (create/update/conflict/blocked) before bei
 1. Reads `catalog/claude-base/` as the desired managed-file template.
 2. Compares against `.kyos/lock.json` checksums to plan changes.
 3. Writes managed files into `.kyos/claude/` and records new checksums.
-4. Creates wrapper stubs in `.claude/` and seeds repo-owned templates (agents, skills, rules, commands).
+4. Creates wrapper stubs in `.claude/` and seeds repo-owned templates (agents, skills, rules, commands folder).
 5. Writes or updates `CLAUDE.md`.
 
-### Managed Workflow Commands
+### Managed Workflow Skills
 
-Located in `catalog/claude-base/claude/commands/` (managed copies) and `.claude/commands/` (repo wrappers). Recommended delivery chain:
+Located in `catalog/claude-base/claude/skills/<name>/` (managed copies) and `.claude/skills/<name>/` (repo wrappers). Recommended delivery chain:
 
 ```
 /spec → /tech → /tasks → /implement → /verify
 ```
 
-Supporting commands: `/prevalidate`, `/architecture`, `/hire`.
+Supporting skills: `/prevalidate`, `/architecture`, `/hire`. Each carries `disable-model-invocation: true`, so it behaves like a legacy slash command (typed explicitly via `/<name>`, never auto-invoked), plus an `agents/openai.yaml` sidecar so Codex respects the same explicit-only behavior. `.claude/commands/` remains a repo-owned folder for anything a repo wants to add itself, but does not hold the built-in flow.
+
+An eleventh skill, `kyos-setup`, scaffolds and interactively populates the skill override layer (below). All eleven skills are also published for other harnesses via `.claude-plugin/marketplace.json` at the repo root, installable elsewhere with `npx skills add` (pass `--copy` so the install lands as a real file, not a symlink).
+
+### Skill Override Layer
+
+`.claude/skill-overrides/` holds per-repo overrides of skill defaults (e.g. where `spec`/`tech`/`tasks`/`implement`/`verify` save execution artifacts), keyed by skill name (`<name>.md`) plus a shared file (`_shared.md`) for cross-skill defaults. It lives outside every skill's own directory, so overrides survive both `kyos-cli --update` and `npx skills update`.
 
 ### Catalog (`catalog/registry.json`)
 
@@ -70,7 +76,7 @@ Defines available capabilities that can be added with `--add`. `--add` installs 
 the registry defines; an unknown name is rejected rather than scaffolded. Authoring a new
 repo-specific skill or agent is `/hire`'s job.
 
-- **Skills**: `critic`, `silent-execution`
+- **Skills**: `critic`, `silent-execution`, plus the eleven workflow skills above (`spec`, `tech`, `tasks`, `implement`, `verify`, `prevalidate`, `architecture`, `hire`, `kyos-setup`).
 - **Agents**: none. The catalog ships no agent definitions and `baseline.agents` is empty, so `--init` seeds no agents. `.claude/agents/` is created as an empty repo-owned folder with a README.
 - **MCPs**: `context7`, `filesystem`
 - **Hooks**: `repo-sandbox` — `PreToolUse` guard blocking tool calls whose paths resolve outside the repo root. Script sources live in `catalog/hooks/<name>/`. The installer copies the chosen runtime's script to `.claude/hooks/` and wires the event into `.claude/settings.json`.
