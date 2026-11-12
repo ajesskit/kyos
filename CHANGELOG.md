@@ -3,6 +3,24 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.0] - 2026-11-12
+
+Existing repos: running `--update` replaces the managed `.kyos/claude/commands/*.md` workflow
+files with skills under `.kyos/claude/skills/<name>/`.
+
+### Added
+- `kyos-setup` skill: scaffolds and interactively populates the `.claude/skill-overrides/`
+  layer, including migration from the old overrides system.
+- skills.sh support: all eleven skills are published via `.claude-plugin/marketplace.json`
+  and installable in other harnesses with `npx skills add` (use `--copy`).
+- `agents/openai.yaml` sidecars so Codex respects the explicit-only invocation of each skill.
+
+### Changed
+- The workflow chain (`spec`, `tech`, `tasks`, `implement`, `verify`) and supporting
+  `prevalidate`, `architecture`, `hire` moved from managed commands to skills with
+  `disable-model-invocation: true`; they are still invoked explicitly via `/<name>`.
+- Rewrote the workflow skills' docs, and the README now targets human readers.
+
 ## [1.3.3] - 2026-08-04
 ### Changed
 - fix(bootstrap): drop unshipped process.md citation and use valid defaultMode
