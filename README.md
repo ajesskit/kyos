@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ajesskit/kyos/main/plugins/kyos/.claude-plugin/icon.png" alt="kyos logo" width="160">
+</p>
+
 # kyos-cli
 
 [![Socket Badge](https://badge.socket.dev/npm/package/kyos-cli)](https://socket.dev/npm/package/kyos-cli)
