@@ -3,6 +3,11 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.0] - 2026-11-17
+### Changed
+- feat: publish kyos as a Claude plugin directory listing
+- ci: publish to npm via trusted publishing (OIDC)
+
 ## [1.4.0] - 2026-11-12
 
 Existing repos: running `--update` replaces the managed `.kyos/claude/commands/*.md` workflow
