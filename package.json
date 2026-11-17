@@ -42,11 +42,13 @@
   "scripts": {
     "start": "node ./bin/kyos.js --init",
     "test": "node ./test/run.js",
-    "lint": "eslint src/ bin/",
+    "lint": "eslint src/ bin/ scripts/",
     "prepublishOnly": "npm run lint && npm test && npm pack --dry-run",
     "prepack": "npm test",
     "pack:check": "npm pack --dry-run",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "build:plugin": "node scripts/build-plugin.js",
+    "check:plugin": "node scripts/build-plugin.js --check"
   },
   "engines": {
     "node": ">=18",

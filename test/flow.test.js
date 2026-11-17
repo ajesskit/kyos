@@ -1755,4 +1755,35 @@ module.exports = function register(test) {
       assert.ok(skillContent.includes(".claude/skill-overrides/_shared.md"), `${name} must reference _shared.md instead`);
     }
   });
+
+  test("plugin folder is in sync with catalog and passes directory rules", () => {
+    const { check } = require("../scripts/build-plugin");
+    const { stale, violations } = check();
+    assert.deepEqual(stale, [], `stale plugin files (run: npm run build:plugin): ${stale.join(", ")}`);
+    assert.deepEqual(violations, [], `plugin rule violations: ${violations.join("; ")}`);
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "..", "plugins", "kyos", ".claude-plugin", "plugin.json"), "utf8")
+    );
+    assert.equal(manifest.name, "kyos");
+    assert.equal(manifest.version, PKG_VERSION, "plugin.json version must match package.json");
+  });
+
+  test("plugin drift check flags a reference whose catalog source changed", () => {
+    const { check, CATALOG_SKILLS, REFERENCES } = require("../scripts/build-plugin");
+    const tamperedCatalog = mkTempDir("kyos-plugin-catalog-");
+    for (const skill of Object.keys(REFERENCES)) {
+      fs.mkdirSync(path.join(tamperedCatalog, skill), { recursive: true });
+      fs.copyFileSync(path.join(CATALOG_SKILLS, skill, "SKILL.md"), path.join(tamperedCatalog, skill, "SKILL.md"));
+    }
+    fs.appendFileSync(path.join(tamperedCatalog, "spec", "SKILL.md"), "\nedited without rebuilding\n", "utf8");
+
+    const { stale } = check({ catalogSkills: tamperedCatalog });
+    assert.deepEqual(stale, [REFERENCES.spec]);
+  });
+
+  test("plugin README word count ignores fenced code blocks", () => {
+    const { countWordsOutsideFences } = require("../scripts/build-plugin");
+    assert.equal(countWordsOutsideFences("one two\n```bash\nthree four five\n```\nsix"), 3);
+  });
 };

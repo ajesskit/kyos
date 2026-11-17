@@ -23,6 +23,22 @@ npx kyos-cli --add agent <name>
 npx kyos-cli --add mcp <name>
 ```
 
+## Claude plugin (`plugins/kyos/`)
+
+After editing a catalog `spec`/`tech`/`tasks`/`implement`/`hire` skill, regenerate the plugin copy
+(`npm test` fails until you do):
+
+```powershell
+npm run build:plugin
+```
+
+Test plugin changes privately before release:
+
+```powershell
+claude --plugin-dir .\plugins\kyos                       # Claude Code
+tar -a -c -f $env:TEMP\kyos-plugin.zip -C plugins kyos   # chat/Cowork: Customize → Plugins → Add → Upload plugin
+```
+
 ## Tests
 
 ```powershell

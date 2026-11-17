@@ -60,7 +60,7 @@ const changeLines = rawLog || "- minor improvements";
 console.log(`  bump:   ${pkg.version} → ${nextVersion} (${bumpType})`);
 console.log(`  commit: ${commitMsg}`);
 console.log(`  tag:    ${tag}`);
-console.log(`  files:  package.json, catalog/registry.json, CHANGELOG.md`);
+console.log(`  files:  package.json, catalog/registry.json, CHANGELOG.md, plugins/kyos/`);
 console.log(`  changes since ${lastTag || "beginning"}:\n${changeLines}`);
 
 if (dryRun) {
@@ -88,6 +88,11 @@ const updated =
     : existing.slice(0, insertAt + 1) + newEntry + existing.slice(insertAt + 1);
 fs.writeFileSync(CHANGELOG_MD, updated, "utf8");
 
+// 5b'. Regenerate the Claude plugin (plugins/kyos) so its version and references match.
+// Must run before `npm test`: the plugin drift test fails on a stale version.
+const { write: writePlugin } = require("./build-plugin");
+for (const rel of writePlugin()) console.log(`  plugin: wrote plugins/kyos/${rel}`);
+
 // 5c. Regenerate lockfile so it stays in sync with the new version
 console.log("\nregenerating lockfile...");
 run("npm install --package-lock-only", { stdio: "inherit" });
@@ -97,14 +102,13 @@ console.log("\nrunning tests...");
 try {
   run("npm test", { stdio: "inherit" });
 } catch {
-  // restore files before dying
-  pkg.version = pkg.version; // already mutated — revert
   die("Tests failed. Version files were updated but not committed — revert manually or fix and re-run.");
 }
 
 // 7. Commit and tag
 const LOCK_JSON = path.join(ROOT, "package-lock.json");
-run(`git add "${PACKAGE_JSON}" "${REGISTRY_JSON}" "${LOCK_JSON}" "${CHANGELOG_MD}"`);
+const PLUGIN_DIR = path.join(ROOT, "plugins", "kyos");
+run(`git add "${PACKAGE_JSON}" "${REGISTRY_JSON}" "${LOCK_JSON}" "${CHANGELOG_MD}" "${PLUGIN_DIR}"`);
 run(`git commit -m "${commitMsg}"`);
 run(`git tag ${tag}`);
 

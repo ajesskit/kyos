@@ -1,0 +1,19 @@
+{
+  "name": "kyos",
+  "displayName": "kyos",
+  "version": "1.4.0",
+  "description": "Turn an idea into working code with a guided spec, tech plan, task list and implementation.",
+  "author": {
+    "name": "ajesskit",
+    "url": "https://github.com/ajesskit"
+  },
+  "homepage": "https://github.com/ajesskit/kyos#readme",
+  "repository": "https://github.com/ajesskit/kyos",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "spec",
+    "planning",
+    "implementation"
+  ]
+}

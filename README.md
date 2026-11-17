@@ -32,6 +32,19 @@ npx kyos-cli --init
   Pull updates with `npx skills update` when you feel like it.
 </details>
 
+<details>
+  <summary><strong>Claude app (chat, Cowork) and Claude Code plugin</strong></summary>
+
+  Search for **kyos** under **Plugins** in Claude and install it. The plugin bundles the
+  spec → tech → tasks → implement chain as one guided `workflow` skill, plus `hire`. It starts
+  when you ask in plain language ("help me plan a feature…"), or via `/kyos:workflow` in Cowork
+  and Claude Code. In chat, each stage is a document in the conversation; with a project folder
+  open, results are saved to `docs/execution/<slug>/`.
+
+  Prefer typed-only `/spec`, `/tech`… commands in a repo? Use `npx kyos-cli --init` there instead
+  of the plugin; you don't need both.
+</details>
+
 ## The workflow
 
 Getting consistent results from Claude on complex tasks takes more than a single prompt — you need structure, clear steps, and a way to keep context across the session. `kyos-cli` gives you a starting point for that structure.
