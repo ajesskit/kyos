@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.1] - 2026-11-17
+### Changed
+- chore: add README logo and plugin support/privacy URLs
+
 ## [1.5.0] - 2026-11-17
 ### Changed
 - feat: publish kyos as a Claude plugin directory listing
