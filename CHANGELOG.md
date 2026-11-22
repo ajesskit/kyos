@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.3] - 2026-11-22
+### Changed
+- fix: drop npm command from generated plugin reference headers (#41)
+
 ## [1.5.2] - 2026-11-22
 ### Changed
 - fix: clear plugin directory policy hold and drop MCP mentions (#40)
