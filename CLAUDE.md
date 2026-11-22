@@ -18,7 +18,7 @@ node ./bin/kyos.js --init       # Bootstrap, or analyze existing setup (read-onl
 node ./bin/kyos.js --apply      # Create-only: write missing managed files, never overwrite
 node ./bin/kyos.js --update     # Force-rewrite .kyos/ to current baseline (destructive to .kyos only)
 node ./bin/kyos.js --doctor [--fix]      # Report (or repair) managed-file drift
-node ./bin/kyos.js --add <type> <name>   # Add capability (skill/agent/mcp/hook)
+node ./bin/kyos.js --add <type> <name>   # Add capability (skill/agent/hook)
 ```
 
 The test runner (`test/run.js`) is a custom TAP-style harness with no name filter — it runs the full suite. To run a single case, temporarily narrow the registrations in `test/flow.test.js`.
@@ -42,8 +42,8 @@ Changes to managed files are planned (create/update/conflict/blocked) before bei
 | `core/workflows.js` | All top-level operations: bootstrap, apply, update, doctor, add-capability, hook install |
 | `core/managed-files.js` | Checksum-based diff/merge: `planManagedChanges()` → `applyManagedChanges()` |
 | `core/fs.js` | Safe filesystem I/O; validates all paths against traversal/symlink attacks |
-| `core/config.js` | Reads/writes `kyos.json` (repo-root, committable) and `.mcp.json` |
-| `core/catalog.js` | Loads `catalog/registry.json` and looks up skills/agents/MCPs |
+| `core/config.js` | Reads/writes `kyos.json` (repo-root, committable) and `.claude/settings.json` |
+| `core/catalog.js` | Loads `catalog/registry.json` and looks up skills/agents/hooks |
 | `core/json.js` | JSON read/write helpers |
 | `core/hash.js` | SHA256 hashing for integrity checks |
 | `core/constants.js` | All directory/file path constants |
@@ -89,7 +89,6 @@ repo-specific skill or agent is `/hire`'s job.
 
 - **Skills**: `critic`, `silent-execution`, plus the eleven workflow skills above (`spec`, `tech`, `tasks`, `implement`, `verify`, `prevalidate`, `architecture`, `hire`, `kyos-setup`).
 - **Agents**: none. The catalog ships no agent definitions and `baseline.agents` is empty, so `--init` seeds no agents. `.claude/agents/` is created as an empty repo-owned folder with a README.
-- **MCPs**: `context7`, `filesystem`
 - **Hooks**: `repo-sandbox` — `PreToolUse` guard blocking tool calls whose paths resolve outside the repo root. Script sources live in `catalog/hooks/<name>/`. The installer copies the chosen runtime's script to `.claude/hooks/` and wires the event into `.claude/settings.json`.
 
 Skills and agents are description-only registry entries: `--add` renders a stub from the
