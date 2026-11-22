@@ -26,8 +26,7 @@ const REFERENCES = {
   hire: "skills/hire/references/repo-mode.md",
 };
 
-const MAX_FILE_BYTES = 256 * 1024; // non-image files (directory review hold above this)
-const MAX_ICON_BYTES = 2 * 1024 * 1024;
+const MAX_FILE_BYTES = 256 * 1024; // directory review hold above this
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
 const MIN_README_WORDS = 40;
 const NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
@@ -185,12 +184,11 @@ function ruleViolations() {
     if (FORBIDDEN_NAMES.has(dirent.name)) violations.push(`${rel}: file not allowed in plugin folder`);
     if (rel === "bin") violations.push("bin/: a top-level bin/ blocks install in chat and Cowork");
     if (dirent.isFile()) {
-      const isImage = IMAGE_EXTENSIONS.has(path.extname(dirent.name).toLowerCase());
-      const size = fs.statSync(abs).size;
-      if (!isImage && size > MAX_FILE_BYTES) violations.push(`${rel}: larger than 256 KiB`);
-      if (isImage && rel.startsWith(".claude-plugin/icon") && size > MAX_ICON_BYTES) {
-        violations.push(`${rel}: icon must be under 2 MB`);
+      if (IMAGE_EXTENSIONS.has(path.extname(dirent.name).toLowerCase())) {
+        // the directory validator cannot inspect binaries and holds the version (BINARIES_NOT_INSPECTED)
+        violations.push(`${rel}: binary files are not allowed in the plugin folder`);
       }
+      if (fs.statSync(abs).size > MAX_FILE_BYTES) violations.push(`${rel}: larger than 256 KiB`);
     }
   }
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ajesskit/kyos/main/plugins/kyos/.claude-plugin/icon.png" alt="kyos logo" width="160">
+  <img src="https://raw.githubusercontent.com/ajesskit/kyos/main/docs/assets/kyos-logo.png" alt="kyos logo" width="160">
 </p>
 
 # kyos-cli
