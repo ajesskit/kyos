@@ -77,7 +77,7 @@ Three commands sit outside the main chain. Reach for them when the repo needs a 
 |---|---|
 | `/prevalidate` | Quick safety check before making changes |
 | `/architecture` | Set or revise your project's technical direction |
-| `/hire` | Create skills, agents, or wire up MCPs to fill gaps in your repo's support layer |
+| `/hire` | Create skills, agents to fill gaps in your repo's support layer |
 
 ## Tips
 
@@ -98,7 +98,7 @@ Three commands sit outside the main chain. Reach for them when the repo needs a 
 | `kyos-cli --init --force` | Reset everything to a clean baseline |
 | `kyos-cli --apply` | Add only missing files, never overwrites anything |
 | `kyos-cli --update` | Pull in the latest managed files without touching your customizations |
-| `kyos-cli --add <type> <name>` | Add a skill, agent, MCP or hook from the catalog |
+| `kyos-cli --add <type> <name>` | Add a skill, agent or hook from the catalog |
 | `kyos-cli --doctor` | Check that everything is in order |
 
 ## Catalog
@@ -109,13 +109,8 @@ Extend your setup with optional capabilities:
 kyos-cli --add skill critic          # Adds a sparring-partner skill that challenges plans before you commit to them
 kyos-cli --add skill silent-execution # Cuts Claude's narration dramatically — act first, explain only when needed. Saves a significant amount of tokens on large tasks.
 
-kyos-cli --add mcp context7          # Gives Claude up-to-date docs for libraries and frameworks you use
-kyos-cli --add mcp filesystem        # Lets Claude read and write files outside the project directory
-
 kyos-cli --add hook repo-sandbox     # Blocks Claude's attempts to access paths outside of current repo root
 ```
-
-MCP entries are wired up automatically.
 
 ## Multi-repo rollout
 
