@@ -3,6 +3,10 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.4] - 2026-11-22
+### Changed
+- fix: move logo out of the plugin folder and forbid binaries there (#42)
+
 ## [1.5.3] - 2026-11-22
 ### Changed
 - fix: drop npm command from generated plugin reference headers (#41)

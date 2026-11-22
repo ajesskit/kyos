@@ -1,7 +1,7 @@
 {
   "name": "kyos",
   "displayName": "kyos",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Turn an idea into working code with a guided spec, tech plan, task list and implementation.",
   "author": {
     "name": "ajesskit",
