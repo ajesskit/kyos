@@ -9,7 +9,6 @@
   },
   "homepage": "https://github.com/ajesskit/kyos#readme",
   "repository": "https://github.com/ajesskit/kyos",
-  "privacyPolicyUrl": "https://github.com/ajesskit/kyos/blob/main/plugins/kyos/README.md#data",
   "license": "MIT",
   "keywords": [
     "workflow",
