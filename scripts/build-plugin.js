@@ -27,7 +27,14 @@ const REFERENCES = {
 };
 
 const MAX_FILE_BYTES = 256 * 1024; // directory review hold above this
-const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"]);
+// The directory requires a listing icon here: square PNG, 512-2048 px.
+const ICON_REL = ".claude-plugin/icon.png";
+const ICON_MIN_PX = 512;
+const ICON_MAX_PX = 2048;
+// The validator text-scans binaries too: these byte sequences, even by chance inside compressed
+// pixel data, are reported as a download-and-run command (RUNTIME_FETCH_EXEC) and hold the version.
+const FETCH_EXEC_BYTES = /npx|npm|curl|wget|bash|pnpm|yarn|bunx|uvx|iwr|iex|\|\s*sh\b/i;
 const MIN_README_WORDS = 40;
 const NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const FORBIDDEN_NAMES = new Set([
@@ -146,6 +153,23 @@ function countWordsOutsideFences(markdown) {
   return withoutFences.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 }
 
+function checkIcon(rel, bytes) {
+  const out = [];
+  const PNG_SIGNATURE = "89504e470d0a1a0a";
+  if (bytes.length < 24 || bytes.subarray(0, 8).toString("hex") !== PNG_SIGNATURE) {
+    return [`${rel}: must be a PNG file`];
+  }
+  const width = bytes.readUInt32BE(16);
+  const height = bytes.readUInt32BE(20);
+  if (width !== height) out.push(`${rel}: must be square (is ${width}x${height})`);
+  if (width < ICON_MIN_PX || width > ICON_MAX_PX) {
+    out.push(`${rel}: must be ${ICON_MIN_PX}-${ICON_MAX_PX} px per side (is ${width})`);
+  }
+  const hit = bytes.toString("latin1").match(FETCH_EXEC_BYTES);
+  if (hit) out.push(`${rel}: bytes contain "${hit[0]}", which the validator reads as a command; re-encode it`);
+  return out;
+}
+
 function ruleViolations() {
   const violations = [];
   if (!fs.existsSync(PLUGIN_ROOT)) return ["plugins/kyos/ does not exist"];
@@ -184,9 +208,10 @@ function ruleViolations() {
     if (FORBIDDEN_NAMES.has(dirent.name)) violations.push(`${rel}: file not allowed in plugin folder`);
     if (rel === "bin") violations.push("bin/: a top-level bin/ blocks install in chat and Cowork");
     if (dirent.isFile()) {
-      if (IMAGE_EXTENSIONS.has(path.extname(dirent.name).toLowerCase())) {
-        // the directory validator cannot inspect binaries and holds the version (BINARIES_NOT_INSPECTED)
-        violations.push(`${rel}: binary files are not allowed in the plugin folder`);
+      if (rel === ICON_REL) {
+        violations.push(...checkIcon(rel, fs.readFileSync(abs)));
+      } else if (IMAGE_EXTENSIONS.has(path.extname(dirent.name).toLowerCase())) {
+        violations.push(`${rel}: the only image allowed in the plugin folder is ${ICON_REL}`);
       }
       if (fs.statSync(abs).size > MAX_FILE_BYTES) violations.push(`${rel}: larger than 256 KiB`);
     }
