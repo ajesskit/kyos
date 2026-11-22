@@ -27,7 +27,7 @@ skills and tools that project is missing.
 
 This plugin starts on its own when you talk about planning or building a feature. If you prefer
 skills that run only when you type them, use [kyos-cli](https://github.com/ajesskit/kyos)
-(`npx kyos-cli --init`) in your repository instead: it installs the same stages as explicit
+in your repository instead (see its README for setup): it installs the same stages as explicit
 `/spec`, `/tech`, `/tasks` and `/implement` commands. If a repository already has kyos-cli set up,
 you don't need this plugin there.
 
