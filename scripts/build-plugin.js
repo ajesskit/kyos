@@ -96,7 +96,7 @@ function generatedReference(skill, catalogSkills = CATALOG_SKILLS) {
   const { body } = splitFrontmatter(readText(source));
   const header =
     `<!-- generated from catalog/claude-base/claude/skills/${skill}/SKILL.md; ` +
-    `do not edit, run: npm run build:plugin -->\n\n`;
+    `do not edit by hand -->\n\n`;
   return header + body.replace(/^\n+/, "");
 }
 

@@ -1,4 +1,4 @@
-<!-- generated from catalog/claude-base/claude/skills/spec/SKILL.md; do not edit, run: npm run build:plugin -->
+<!-- generated from catalog/claude-base/claude/skills/spec/SKILL.md; do not edit by hand -->
 
 # Spec
 
